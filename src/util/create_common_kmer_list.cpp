@@ -23,9 +23,10 @@ void setDefaults(LocalParameters & par){
     time_t now = time(0);
     tm *ltm = localtime(&now);
     par.dbDate = to_string(1900 + ltm->tm_year) + "-" + to_string(1 + ltm->tm_mon) + "-" + to_string(ltm->tm_mday);
-    srand(time(NULL));
-    string randStr = to_string(rand());
-    par.dbName = randStr.substr(0, 32);
+    // Not rand(). The name went into db.parameters, so the same inputs wrote a different
+    // file every run, and nothing reads the field back except to round-trip it. --db-name
+    // sets it when a name is wanted.
+    par.dbName = "common-kmer-list";
 }
 
 int create_common_kmer_list(int argc, const char **argv, const Command &command) {

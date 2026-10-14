@@ -46,5 +46,6 @@ plan*
 research*
 paper_write/
 
-test/fixture/
+test/fixture*/
 test/work*/
+__pycache__/

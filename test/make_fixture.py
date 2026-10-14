@@ -8,9 +8,13 @@ byte-identical files, which is what lets the two binaries be compared at all.
 import argparse
 import os
 import random
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import simulate
+from simulate import BASES, mutate
 
 SEED = 20261014
-BASES = "ACGT"
 
 GENOME_LEN = 30000
 CONSERVED_LEN = 1500
@@ -18,13 +22,6 @@ GENUS_BLOCK_LEN = 1500
 STRAIN_DIVERGENCE = 0.005
 
 COVERAGE = 15
-READ_LEN = 150
-FRAG_MEAN = 450
-FRAG_SD = 40
-ERROR_RATE = 0.002
-
-CLASSIFIED_SHARE = 0.55
-WRONG_SHARE = 0.03
 
 # (assembly accession, assembly taxid, species taxid, genus taxid)
 ASSEMBLIES = [
@@ -75,18 +72,6 @@ def seq(rng, n):
     return "".join(rng.choice(BASES) for _ in range(n))
 
 
-def mutate(rng, s, rate):
-    out = list(s)
-    for i in range(len(out)):
-        if rng.random() < rate:
-            out[i] = rng.choice([b for b in BASES if b != out[i]])
-    return "".join(out)
-
-
-def revcomp(s):
-    return s.translate(str.maketrans("ACGTN", "TGCAN"))[::-1]
-
-
 def build_genomes(rng):
     """Every assembly carries the same conserved block and its genus's block, so the
     common k-mer list has something to find and the cap has something to cap."""
@@ -105,20 +90,6 @@ def build_genomes(rng):
         a, b = unique_len // 3, 2 * (unique_len // 3)
         genomes[acc] = u[:a] + conserved + u[a:b] + genus_block[genus] + u[b:]
     return genomes
-
-
-def simulate(rng, acc, genome):
-    pairs = round(len(genome) * COVERAGE / (2 * READ_LEN))
-    out = []
-    for i in range(pairs):
-        frag = max(2 * READ_LEN, int(rng.gauss(FRAG_MEAN, FRAG_SD)))
-        frag = min(frag, len(genome))
-        start = rng.randrange(0, len(genome) - frag + 1)
-        f = genome[start:start + frag]
-        r1 = mutate(rng, f[:READ_LEN], ERROR_RATE)
-        r2 = mutate(rng, revcomp(f)[:READ_LEN], ERROR_RATE)
-        out.append(("%s_%05d" % (acc, i), r1, r2))
-    return out
 
 
 def write_taxonomy(d):
@@ -166,39 +137,18 @@ def main():
 
     write_taxonomy(os.path.join(out, "taxonomy"))
 
-    rdir = os.path.join(out, "reads")
-    os.makedirs(rdir, exist_ok=True)
-    qual = "I" * READ_LEN
-    reads = []
+    reads, truth = [], {}
     for acc, _, species, _ in ASSEMBLIES:
-        for name, r1, r2 in simulate(rng, acc, genomes[acc]):
-            reads.append((name, r1, r2, species))
-    with open(os.path.join(rdir, "R1.fq"), "w") as f1, \
-         open(os.path.join(rdir, "R2.fq"), "w") as f2:
-        for name, r1, r2, _ in reads:
-            f1.write("@%s\n%s\n+\n%s\n" % (name, r1, qual))
-            f2.write("@%s\n%s\n+\n%s\n" % (name, r2, qual))
+        for r in simulate.simulate(rng, acc, genomes[acc], COVERAGE):
+            reads.append(r)
+            truth[r[0]] = species
+    simulate.write_reads(os.path.join(out, "reads"), reads)
+    simulate.write_classification(os.path.join(out, "classification.tsv"), rng, reads,
+                                  truth, sorted({s for _, _, s, _ in ASSEMBLIES}))
+    simulate.write_answer(os.path.join(out, "answer.tsv"), reads, truth)
 
-    # A classification table in Metabuli's column order, so apply-group runs at its
-    # defaults: 1 classified flag, 2 read id, 3 taxid, 4 query length, 5 score.
-    species_ids = sorted({s for _, _, s, _ in ASSEMBLIES})
-    with open(os.path.join(out, "classification.tsv"), "w") as f:
-        for name, r1, r2, species in reads:
-            roll = rng.random()
-            if roll >= CLASSIFIED_SHARE:
-                f.write("0\t%s\t0\t%d\t0.000\t no rank\t\n" % (name, len(r1) + len(r2)))
-                continue
-            if roll < WRONG_SHARE:
-                taxid = rng.choice([s for s in species_ids if s != species])
-            else:
-                taxid = species
-            score = round(0.50 + rng.random() * 0.50, 3)
-            f.write("1\t%s\t%d\t%d\t%.3f\tspecies\t\n"
-                    % (name, taxid, len(r1) + len(r2), score))
-
-    with open(os.path.join(out, "answer.tsv"), "w") as f:
-        for name, _, _, species in reads:
-            f.write("%s\t%d\n" % (name, species))
+    with open(os.path.join(out, "fixture.conf"), "w") as f:
+        f.write("GTDB=1\nACC2TAXID=taxonomy/taxid.map\n")
 
     print("genomes      %d x %d bp" % (len(ASSEMBLIES), GENOME_LEN))
     print("read pairs   %d" % len(reads))

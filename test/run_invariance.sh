@@ -7,7 +7,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 BIN=${BIN:-$HERE/../build/src/metamoim}
 WORK=${WORK:-$HERE/work_invariance}
 FIXTURE=$HERE/fixture
-CKL=${CKL:-$HERE/work/metamoim/ckl}
+CKL=${CKL:-$HERE/work/metamoim_a/ckl}
 
 THREAD_GRID=${THREAD_GRID:-"1 4 16"}
 PARTITION_GRID=${PARTITION_GRID:-"1 4 16"}

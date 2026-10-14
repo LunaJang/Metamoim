@@ -13,6 +13,10 @@ Metamoim은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 **2026-10-14 2차 갱신**: 9단계를 했다. fixture를 만들고 두 바이너리를 같은 데이터에
 돌려 비교했다 — §7. 결과를 담는 파일은 **전부 바이트 동일**하다.
 
+**2026-10-14 3차 갱신**: §7.4의 결함 네 건을 **고쳤다** — §8. 그리고 서열이 실제인
+fixture를 하나 더 만들었다(§7.1b). 합성 서열로는 자동 cap이 한 번도 안 물렸는데, 실제
+게놈에서는 기본값 그대로 물린다.
+
 ---
 
 ## 1. 소스 동일성
@@ -182,18 +186,53 @@ clique·star 간선 → 3단계 grouping(**clique 12 그룹 / star 234 그룹**,
 자동 cap은 이 크기에서 k-mer를 100 % 남기므로, `--max-kmer-reads 30`을 준 arm을 하나 더
 돌려 skip 경로를 밟힌다(1,715 k-mer skip, `skipped_kmers` 36 KB).
 
+### 7.1b 서열이 실제인 fixture
+
+`test/make_real_fixture.py`. 사람 코로나바이러스 레퍼런스 게놈 6개 —
+`NC_045512.2`(SARS-CoV-2) · `NC_019843.3`(MERS-CoV) · `NC_002645.1`(229E) ·
+`NC_006213.1`(OC43) · `NC_005831.2`(NL63) · `NC_006577.2`(HKU1) — 을 NCBI에서 받아
+쓴다. **서로 다른 6개 종**이고 두 개 속(Alpha·Betacoronavirus)에 걸쳐 있다. taxonomy도
+NCBI 것을 그 계보만 잘라 쓴다. 공통 k-mer 리스트가 찾는 상동성이 이 스크립트가 붙여 넣은
+블록이 아니라 **게놈 자신의 보존 영역**(ORF1ab, RdRp)이라는 점이 합성 fixture와 다르다.
+
+리드는 여전히 시뮬레이션이다 — 6종을 정답과 함께 덮는 공개 리드 세트가 없다. 바뀐 것은
+서열이고, 조성·반복·종간 상동성이 사는 곳이 거기다.
+
+| | 합성 | 실제 서열 |
+|---|---|---|
+| 게놈 | 8 assembly × 30,000 bp, 난수 | 6 레퍼런스, 27,317\~30,741 bp |
+| 종 | 4 (가공) | **6 (NCBI 실제)** |
+| read pair | 12,000 | 17,556 |
+| 공통 k-mer | 붙여 넣은 블록에서 나온 것 | **508개, 전부 실제 보존 영역** |
+| 질의에서 제거된 match | 132,435 | 23,058 |
+| **자동 cap** | **한 개도 안 걸림** (100 % 유지) | **21개 skip** (99.9764 % 유지) |
+| 그룹 | clique 12 / star 234 | clique 7 / star 341 |
+| 전파 | 6,572 → 11,587 | 9,617 → 17,553 |
+
+마지막 두 줄이 요점이다. 난수 서열에는 반복이 없어서 reads-per-k-mer cap이 기본값으로는
+아무것도 안 자른다 — 합성 fixture에서 `--max-kmer-reads 30`을 손으로 줘야 했던 이유다.
+실제 게놈에서는 그냥 물린다.
+
+둘 다 같은 `run_equivalence.sh`로 돈다. fixture마다 `fixture.conf`가 taxonomy를 어떻게
+주는지 적어 둔다 — 합성은 gtdb-taxdump를 흉내 내 `--gtdb 1`, 실제는 accession 표를 그대로
+넘겨 `--gtdb 0`이라 names.dmp를 다시 쓰는 단계가 아예 없다.
+
 ### 7.2 비교 방법 — `test/run_equivalence.sh`
 
-단순 cross-diff로는 부족하다. `create-common-kmer-list`는 **같은 바이너리로 두 번 돌려도**
-같지 않은 파일을 쓴다. 그래서 metabuli를 두 번, metamoim을 한 번 돌려 **metabuli가 스스로
-재현하는 파일**만 엄격 비교 대상으로 삼는다.
+묻는 것이 둘이라 **두 바이너리를 각각 두 번씩** 돌린다.
+
+1. metamoim이 **재현 가능한가** — 두 번 돌린 결과가 전부 같아야 한다
+2. metabuli와 **일치하는가** — §8에서 일부러 다르게 쓰기로 한 네 파일을 뺀 전부
+
+metabuli도 두 번 돌리는 이유는, 그쪽이 스스로 재현하지 못하는 파일이 있다는 사실을
+가정하지 않고 **보여 주기** 위해서다.
 
 비교 대상은 `metabuli` @ `64680ee4` (out-of-source `build_64680ee4`, `-DCMAKE_BUILD_TYPE=Release`,
 Metamoim 빌드와 같은 설정: `HAVE_AVX2=0`, `-O3 -DNDEBUG`).
 
 ### 7.3 결과
 
-**결과를 담는 파일 18개 전부 바이트 동일.**
+**결과를 담는 파일 18개 전부 바이트 동일** (두 fixture 모두). 아래는 §8의 수정 **전** 표다.
 
 | 파일 | metabuli ×2 | metamoim vs metabuli |
 |---|---|---|
@@ -209,7 +248,7 @@ Metamoim 빌드와 같은 설정: `HAVE_AVX2=0`, `-O3 -DNDEBUG`).
 | `ckl/db.parameters` | **UNSTABLE** | `DB_name` + 도구 이름 키 |
 | `ckl/taxonomyDB` | stable | 59 byte, **전부 구조체 패딩** |
 
-### 7.4 동일하지 않은 네 파일, 하나씩
+### 7.4 동일하지 않은 네 파일, 하나씩 (고치기 전)
 
 **`ckl/taxID_list`, `taxonomy/taxid.accession2taxid` — Metabuli 자신의 비결정성.**
 같은 바이너리를 두 번 돌려도 줄 순서가 바뀐다. `--threads 1`로 내리면 두 파일 모두
@@ -227,7 +266,7 @@ Metamoim 빌드와 같은 설정: `HAVE_AVX2=0`, `-O3 -DNDEBUG`).
 `memcpy`로 그대로 써서 그 구멍의 쓰레기 값이 파일에 들어간다. `test/check_taxonomydb.py`가
 다른 byte의 offset을 전부 구해 **모두 (offset − 블록시작) mod 32 ∈ [12,16)** 임을 확인한다 —
 21개 노드 중 15개의 패딩이다. 의미를 담은 byte는 하나도 다르지 않다. 이것은 Metabuli에서
-물려받은 결함이고 고치는 것은 범위 밖이다(그러면 비교 기준이 바뀐다).
+물려받은 결함이다. **§8에서 고쳤다.**
 
 ### 7.5 스레드·파티션 불변성 — `test/run_invariance.sh`
 
@@ -252,5 +291,56 @@ python3 test/make_fixture.py test/fixture
 MODE=easy-grouping WORK=test/work_invariance_star ./test/run_invariance.sh
 ```
 
-`test/fixture/`와 `test/work*/`는 생성물이라 커밋하지 않는다. 생성기가 결정적이므로
-어디서 돌려도 같은 입력이 나온다.
+`test/fixture*/`와 `test/work*/`는 생성물이라 커밋하지 않는다. 생성기가 결정적이므로
+어디서 돌려도 같은 입력이 나온다. 실제 서열 fixture는 첫 실행에서만 NCBI를 받고
+`fixture_real/cache/`에 둔다.
+
+서열이 실제인 쪽으로도 같은 것을 돌린다:
+
+```sh
+python3 test/make_real_fixture.py test/fixture_real
+FIXTURE=$PWD/test/fixture_real WORK=$PWD/test/work_real ./test/run_equivalence.sh
+```
+
+---
+
+## 8. §7.4의 네 건을 고쳤다 (2026-10-14)
+
+전부 Metamoim 쪽만 고쳤다. Metabuli_work는 여전히 한 바이트도 건드리지 않았다.
+
+| 파일 | 원인 | 고친 곳 |
+|---|---|---|
+| `ckl/taxID_list` | `unordered_set`을 순회하며 그대로 씀 | `IndexCreator.cpp` 2군데 — `std::vector`로 옮겨 정렬 후 기록 |
+| `taxonomy/taxid.accession2taxid` | `unordered_map`을 순회하며 그대로 씀 | `accession2taxid.cpp` — accession 기준 정렬 후 기록 |
+| `ckl/db.parameters` | `DB_name`이 `srand(time(NULL))` + `rand()` | `create_common_kmer_list.cpp` — 기본값 `"common-kmer-list"`. 이름이 필요하면 `--db-name` |
+| `ckl/taxonomyDB` | `TaxonNode`의 offset 12, 4 byte 패딩이 미초기화인 채 `memcpy`로 파일에 들어감 | `TaxonomyWrapper.cpp` `serialize()` — 노드 구역을 `memset`으로 0으로 깔고 다섯 필드를 `offsetof`로 제자리에 씀. **레이아웃 불변** — `unserialize()`가 버퍼를 `TaxonNode*`로 캐스팅해 읽기 때문 |
+
+`TaxonNode`는 `lib/mmseqs` submodule 소유라 손대지 않았다. 구멍을 메우는 일은 그 구조체를
+쓰는 쪽에서 한다.
+
+### 8.1 고친 뒤
+
+| | 합성 fixture | 실제 서열 fixture |
+|---|---|---|
+| metamoim ×2 | **25파일 전부 stable** | **24파일 전부 stable** |
+| metabuli ×2 | `taxID_list`·`taxid.accession2taxid`·`db.parameters` unstable | `taxID_list`·`db.parameters`·**`taxonomyDB`** unstable |
+| 결과 18파일 | 전부 바이트 동일 | 전부 바이트 동일 |
+| 네 파일 | 같은 줄 정렬 / 이름 키 / 패딩 0 | 같음 |
+
+실제 서열 fixture에서는 `taxonomyDB`가 metabuli 쪽에서 **실제로 unstable로 나왔다** —
+패딩 쓰레기가 실행마다 달랐다. metamoim 쪽은 두 번 다 같다. 수정이 듣는다는 직접 증거다.
+
+### 8.2 경고
+
+수정 전후로 새 경고 0. 전수 재빌드해 `파일:줄:열: 메시지`를 비교하면 `IndexCreator.cpp`의
+기존 경고 3건이 줄 번호만 14줄 밀렸고(두 군데에 7줄씩 추가), 줄 번호를 지우면
+`Metamoim \ Metabuli`는 여전히 **공집합**이다.
+
+처음 쓴 `taxonomyDB` 수정은 `TaxonNode`를 `memset`해서 `-Wclass-memaccess`를 새로
+만들었다 — 사용자 제공 생성자가 있어 non-trivial이기 때문이다. `char *` 대상 `memset` +
+`offsetof` 기록으로 바꿔 없앴다.
+
+### 8.3 남은 비결정성
+
+`db.parameters`의 `Creation_date`는 그대로 둔다. 날짜는 의도된 메타데이터지 결함이 아니다.
+그래서 `db.parameters`는 날짜가 바뀌면 바이트가 바뀐다 — 비교에서 그 줄은 제외한다.

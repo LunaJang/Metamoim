@@ -1,20 +1,29 @@
 #!/bin/bash
-# metamoim against metabuli on the same fixture.
+# metamoim against metabuli 64680ee4 on the same fixture, and each against itself.
 #
-# A plain cross-diff is not enough on its own: create-common-kmer-list writes three
-# files that are not reproducible by the same binary either. So metabuli is run twice
-# and the files that disagree with themselves become the allowed set; metamoim fails on
-# any file outside it.
+# Two questions, not one:
+#   1. is metamoim reproducible?   -- run it twice, every file must match
+#   2. does it agree with metabuli? -- every file must match except the four that
+#      metamoim deliberately writes differently, listed in KNOWN below
+# metabuli is run twice as well, so its own non-reproducibility is shown rather than
+# assumed.
 set -uo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 METAMOIM=${METAMOIM:-$HERE/../build/src/metamoim}
 METABULI=${METABULI:-$HOME/src/Metabuli_work/build_64680ee4/src/metabuli}
 WORK=${WORK:-$HERE/work}
-FIXTURE=$HERE/fixture
+FIXTURE=${FIXTURE:-$HERE/fixture}
 
 THREADS=${THREADS:-8}
 PARTITIONS=${PARTITIONS:-16}
+
+# Each fixture says how its taxonomy is given. The synthetic one mimics gtdb-taxdump
+# (--gtdb 1, a taxid.map that create-common-kmer-list turns into an accession table);
+# the real one hands over an accession table already, so nothing rewrites names.dmp.
+GTDB=1
+ACC2TAXID=taxonomy/taxid.map
+[ -f "$FIXTURE/fixture.conf" ] && . "$FIXTURE/fixture.conf"
 
 FILES="
 ckl/diffIdx
@@ -26,7 +35,6 @@ ckl/taxonomyDB
 ckl/db.parameters
 taxonomy/names.dmp
 taxonomy/nodes.dmp
-taxonomy/taxid.accession2taxid
 group/groups
 group/groupMap
 group/skipped_kmers
@@ -44,6 +52,16 @@ apply_easy/updated_classifications.tsv
 apply_easy/updated_report.tsv
 "
 
+# Files metamoim writes differently on purpose, and how the difference is checked.
+known() {
+    case $1 in
+        ckl/taxID_list|taxonomy/taxid.accession2taxid) echo same_set ;;
+        ckl/db.parameters)                             echo params ;;
+        ckl/taxonomyDB)                                echo padding ;;
+        *)                                             echo "" ;;
+    esac
+}
+
 for b in "$METAMOIM" "$METABULI"; do
     [ -x "$b" ] || { echo "no binary at $b" >&2; exit 1; }
 done
@@ -58,9 +76,17 @@ run_one() {  # <tag> <binary>
     # --gtdb 1 rewrites names.dmp where it stands, so each run gets its own taxonomy.
     cp -r "$FIXTURE/taxonomy" "$d/taxonomy"
 
-    "$bin" create-common-kmer-list --gtdb 1 --threads "$THREADS" --cds-info x \
+    # Under --gtdb 1 the mapping is rewritten in place, so it has to be the run's own copy.
+    local acc2taxid
+    case $ACC2TAXID in
+        taxonomy/*) acc2taxid=$d/$ACC2TAXID ;;
+        *)          cp "$FIXTURE/$ACC2TAXID" "$d/"
+                    acc2taxid=$d/$(basename "$ACC2TAXID") ;;
+    esac
+
+    "$bin" create-common-kmer-list --gtdb "$GTDB" --threads "$THREADS" --cds-info x \
         --syncmer 1 --smer-len 5 --kmer-format 5 \
-        "$d/ckl" "$FIXTURE/fasta_list.txt" "$d/taxonomy/taxid.map" "$d/taxonomy" \
+        "$d/ckl" "$FIXTURE/fasta_list.txt" "$acc2taxid" "$d/taxonomy" \
         > "$d/ckl.log" 2>&1 || { echo "[$tag] create-common-kmer-list failed" >&2; return 1; }
 
     "$bin" grouping --threads "$THREADS" --partitions "$PARTITIONS" \
@@ -90,62 +116,77 @@ run_one() {  # <tag> <binary>
 
 echo "metamoim : $METAMOIM"
 echo "metabuli : $METABULI"
+echo "fixture  : $FIXTURE"
 echo "threads $THREADS, partitions $PARTITIONS"
 echo
-echo "=== running: metabuli twice, metamoim once ==="
+echo "=== running each binary twice ==="
 run_one metabuli_a "$METABULI" || exit 1
 run_one metabuli_b "$METABULI" || exit 1
-run_one metamoim  "$METAMOIM"  || exit 1
+run_one metamoim_a "$METAMOIM" || exit 1
+run_one metamoim_b "$METAMOIM" || exit 1
 
 A=$WORK/metabuli_a
 B=$WORK/metabuli_b
-M=$WORK/metamoim
+M=$WORK/metamoim_a
+N=$WORK/metamoim_b
+
+# Only --gtdb 1 writes this one: it is the table create-common-kmer-list derives.
+[ "$GTDB" = 1 ] && FILES="$FILES
+taxonomy/taxid.accession2taxid"
 
 fail=0
-unstable=0
 echo
-printf '%-42s %-14s %s\n' FILE "metabuli x2" "metamoim vs metabuli"
-printf '%-42s %-14s %s\n' "----" "-----------" "--------------------"
+printf '%-40s %-13s %-13s %s\n' FILE "metabuli x2" "metamoim x2" "metamoim vs metabuli"
+printf '%-40s %-13s %-13s %s\n' "----" "-----------" "-----------" "--------------------"
 for f in $FILES; do
-    if [ ! -f "$A/$f" ] || [ ! -f "$M/$f" ]; then
-        printf '%-42s %-14s %s\n' "$f" "-" "MISSING"; fail=1; continue
+    for side in "$A" "$M" "$N" "$B"; do
+        [ -f "$side/$f" ] || { printf '%-40s %s\n' "$f" "MISSING"; fail=1; continue 2; }
+    done
+
+    cmp -s "$A/$f" "$B/$f" && mbself=stable || mbself=unstable
+    if cmp -s "$M/$f" "$N/$f"; then mmself=stable; else mmself=UNSTABLE; fail=1; fi
+
+    if cmp -s "$A/$f" "$M/$f"; then
+        cross=identical
+    else
+        case $(known "$f") in
+            same_set)
+                if cmp -s <(sort "$A/$f") <(sort "$M/$f"); then cross="sorted (intended)"
+                else cross="DIFFERENT SET"; fail=1; fi ;;
+            params)
+                # Creation_date and the key naming the tool are allowed to differ, and
+                # DB_name differs because metabuli randomises it.
+                if [ -z "$(diff "$A/$f" "$M/$f" | grep '^[<>]' \
+                           | grep -vE 'DB_name|Creation_date|commit used to create the DB')" ]
+                then cross="name/date only (intended)"
+                else cross=DIFFER; fail=1; fi ;;
+            padding)
+                if python3 "$HERE/check_taxonomydb.py" "$A/$f" "$M/$f" > /dev/null
+                then cross="padding zeroed (intended)"
+                else cross=DIFFER; fail=1; fi ;;
+            *)
+                cross=DIFFER; fail=1 ;;
+        esac
     fi
-    if cmp -s "$A/$f" "$B/$f"; then self=stable; else self=UNSTABLE; unstable=$((unstable+1)); fi
-    if cmp -s "$A/$f" "$M/$f"; then cross=identical
-    elif [ "$f" = ckl/taxonomyDB ] \
-         && python3 "$HERE/check_taxonomydb.py" "$A/$f" "$M/$f" > /dev/null; then
-        cross="padding only (allowed)"
-    elif [ "$self" = UNSTABLE ];  then cross="differs (allowed)"
-    else cross=DIFFER; fail=1; fi
-    printf '%-42s %-14s %s\n' "$f" "$self" "$cross"
+    printf '%-40s %-13s %-13s %s\n' "$f" "$mbself" "$mmself" "$cross"
 done
 
 echo
-if [ "$unstable" -gt 0 ]; then
-    echo "$unstable file(s) are not reproducible by metabuli itself. What differs:"
-    for f in $FILES; do
-        cmp -s "$A/$f" "$B/$f" && continue
-        echo "  --- $f"
-        if [ "$f" = ckl/db.parameters ]; then
-            diff "$A/$f" "$B/$f" | sed 's/^/      /'
-        elif cmp -s <(sort "$A/$f" 2>/dev/null) <(sort "$B/$f" 2>/dev/null); then
-            echo "      same lines, different order"
-        else
-            echo "      $(cmp -l "$A/$f" "$B/$f" | wc -l) byte(s) of $(stat -c%s "$A/$f") differ"
-        fi
-    done
-fi
-
-if ! cmp -s "$A/ckl/taxonomyDB" "$M/ckl/taxonomyDB"; then
-    echo
-    echo "ckl/taxonomyDB, metamoim against metabuli:"
-    python3 "$HERE/check_taxonomydb.py" "$A/ckl/taxonomyDB" "$M/ckl/taxonomyDB" \
-        | sed 's/^/  /'
-fi
+echo "files metamoim writes differently, on purpose:"
+for f in ckl/taxID_list taxonomy/taxid.accession2taxid ckl/db.parameters ckl/taxonomyDB; do
+    [ -f "$M/$f" ] || continue
+    echo "  --- $f"
+    case $(known "$f") in
+        same_set) echo "      metabuli order random, metamoim sorted; same $(wc -l < "$M/$f") lines" ;;
+        params)   diff "$A/$f" "$M/$f" | sed 's/^/      /' ;;
+        padding)  python3 "$HERE/check_taxonomydb.py" "$A/$f" "$M/$f" | sed 's/^/      /' ;;
+    esac
+done
 
 echo
 if [ "$fail" -eq 0 ]; then
-    echo "RESULT: metamoim differs from metabuli on no file that carries a result."
+    echo "RESULT: metamoim is reproducible, and agrees with metabuli everywhere the two"
+    echo "        are meant to agree."
 else
     echo "RESULT: FAILED"
 fi

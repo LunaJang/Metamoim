@@ -335,7 +335,22 @@ std::pair<char*, size_t> TaxonomyWrapper::serialize(const TaxonomyWrapper& t) {
     memcpy(p, &t.maxTaxID, sizeof(int));
     p += sizeof(int);
     
-    memcpy(p, t.taxonNodes, t.maxNodes * sizeof(TaxonNode));
+    // Not one memcpy of the array. TaxonNode is {int, int, int, size_t, size_t}, so the
+    // compiler leaves four bytes unwritten at offset 12 to align rankIdx, and copying the
+    // struct whole puts whatever happened to sit in that hole into the file. The bytes
+    // mean nothing and nothing reads them, but they made taxonomyDB differ between two
+    // runs that had built the same taxonomy. Staging through a zeroed node keeps the hole
+    // at zero; the layout is unchanged, which unserialize() depends on.
+    memset(p, 0, t.maxNodes * sizeof(TaxonNode));
+    for (size_t i = 0; i < t.maxNodes; ++i) {
+        char * slot = p + i * sizeof(TaxonNode);
+        const TaxonNode & node = t.taxonNodes[i];
+        memcpy(slot + offsetof(TaxonNode, id),          &node.id,          sizeof(node.id));
+        memcpy(slot + offsetof(TaxonNode, taxId),       &node.taxId,       sizeof(node.taxId));
+        memcpy(slot + offsetof(TaxonNode, parentTaxId), &node.parentTaxId, sizeof(node.parentTaxId));
+        memcpy(slot + offsetof(TaxonNode, rankIdx),     &node.rankIdx,     sizeof(node.rankIdx));
+        memcpy(slot + offsetof(TaxonNode, nameIdx),     &node.nameIdx,     sizeof(node.nameIdx));
+    }
     p += t.maxNodes * sizeof(TaxonNode);
     memcpy(p, t.D, (t.maxTaxID + 1) * sizeof(int));
     p += (t.maxTaxID + 1) * sizeof(int);

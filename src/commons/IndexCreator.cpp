@@ -305,11 +305,17 @@ void IndexCreator::createCommonKmerIndex() {
     }
 
     // Write taxonomy ID list
-    FILE * taxidListFile = fopen(taxidListFileName.c_str(), "w");
-    for (auto & taxid: taxIdSet) {
-        fprintf(taxidListFile, "%d\n", taxid);
+    // Sorted, not in taxIdSet's own order: the set is unordered and filled from several
+    // threads, so the same input wrote the same taxa in a different order every run.
+    {
+        std::vector<TaxID> sortedTaxIds(taxIdSet.begin(), taxIdSet.end());
+        std::sort(sortedTaxIds.begin(), sortedTaxIds.end());
+        FILE * taxidListFile = fopen(taxidListFileName.c_str(), "w");
+        for (const TaxID taxid : sortedTaxIds) {
+            fprintf(taxidListFile, "%d\n", taxid);
+        }
+        fclose(taxidListFile);
     }
-    fclose(taxidListFile);
 
     std::vector<std::atomic<bool>> batchChecker(accessionBatches.size());
     size_t processedBatchCnt = 0;
@@ -410,11 +416,17 @@ void IndexCreator::createIndex() {
     }
 
     // Write taxonomy id list
-    FILE * taxidListFile = fopen(taxidListFileName.c_str(), "w");
-    for (auto & taxid: taxIdSet) {
-        fprintf(taxidListFile, "%d\n", taxid);
+    // Sorted, not in taxIdSet's own order: the set is unordered and filled from several
+    // threads, so the same input wrote the same taxa in a different order every run.
+    {
+        std::vector<TaxID> sortedTaxIds(taxIdSet.begin(), taxIdSet.end());
+        std::sort(sortedTaxIds.begin(), sortedTaxIds.end());
+        FILE * taxidListFile = fopen(taxidListFileName.c_str(), "w");
+        for (const TaxID taxid : sortedTaxIds) {
+            fprintf(taxidListFile, "%d\n", taxid);
+        }
+        fclose(taxidListFile);
     }
-    fclose(taxidListFile);
 
     // Process the splits until all are processed
     std::vector<std::atomic<bool>> batchChecker(accessionBatches.size());
