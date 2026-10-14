@@ -355,6 +355,22 @@ LocalParameters::LocalParameters() :
                         typeid(int),
                         (void *) &partitions,
                         "^[0-9]+$"),
+        MAX_BUFFERED_PAIRS(MAX_BUFFERED_PAIRS_ID,
+                        "--max-buffered-pairs",
+                        "Pairs the emit stage holds before it flushes (0=derive from --max-ram)",
+                        "How many read pairs the emit stage may hold across all threads before it "
+                        "writes a flush round to disk. 0, the default, derives it from --max-ram, "
+                        "which is what a real run wants. A number sets it outright, and the only "
+                        "reason to do that is to make a small input take the many-round path: the "
+                        "derived budget is hundreds of millions of pairs, so a test fixture would "
+                        "otherwise flush once and leave the round machinery unexercised. It cannot "
+                        "change the answer -- weights accumulate by saturating addition, so the "
+                        "merge is associative and the schedule a round happens to take does not "
+                        "reach the output. test/run_flush.sh is what checks that claim rather than "
+                        "repeating it.",
+                        typeid(int),
+                        (void *) &maxBufferedPairs,
+                        "^[0-9]+$"),
         COMMON_KMER_SPAN(COMMON_KMER_SPAN_ID,
                     "--common-kmer-span",
                     "K-mers discarded either side of a common-k-mer hit (0=the hit alone)",
@@ -779,6 +795,7 @@ LocalParameters::LocalParameters() :
     minOverlapRatio = 0.5f;
     weakBandRatio = 0.3333f;
     partitions = 16;
+    maxBufferedPairs = 0;
     // 0 = clique. Spelled as a literal rather than EdgeMode: that enum lives in the read-group
     // module, and LocalParameters must not depend on it.
     edgeMode = 0;
@@ -910,6 +927,7 @@ LocalParameters::LocalParameters() :
     groupGeneration.push_back(&MIN_OVERLAP_RATIO);
     groupGeneration.push_back(&WEAK_BAND_RATIO);
     groupGeneration.push_back(&PARTITIONS);
+    groupGeneration.push_back(&MAX_BUFFERED_PAIRS);
     groupGeneration.push_back(&COMMON_KMER_SPAN);
     groupGeneration.push_back(&MAX_TMP_DISK);
     groupGeneration.push_back(&PRINT_LOG);

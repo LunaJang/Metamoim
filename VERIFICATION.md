@@ -17,6 +17,9 @@ Metamoim은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 fixture를 하나 더 만들었다(§7.1b). 합성 서열로는 자동 cap이 한 번도 안 물렸는데, 실제
 게놈에서는 기본값 그대로 물린다.
 
+**2026-10-14 4차 갱신**: 다중 flush 라운드를 밟았고, 밟으려다 **star 모드가 `--max-ram`을
+아예 무시하고 있었다**는 것을 찾아 고쳤다 — §9.
+
 ---
 
 ## 1. 소스 동일성
@@ -153,10 +156,8 @@ $ git -C /home/user1/src/Metabuli_work status --porcelain
 
 ## 6. 아직 증명되지 않은 것
 
-- **`easy-grouping`의 다중 flush 라운드.** Metabuli에서도 한 번도 밟힌 적이 없는 경로다
-  (`Metabuli_work/research.md` §11-8). fixture가 작아서 이번에도 안 밟혔다.
-- **실데이터 규모.** fixture는 12,000 read pair다. out-of-core 경로(여러 번의 flush,
-  `--max-tmp-disk` fold)는 이 크기에서 한 번만 돈다.
+- **실데이터 규모.** fixture는 2만 pair 미만이다. `--max-tmp-disk` fold 경로는 이 크기에서
+  밟히지 않는다. 다중 flush는 §9에서 해결했다.
 - **Metabuli에서 물려받은 결함들.** `research.md` §11의 항목은 그대로 복사됐다. 의도된 것이다 —
   동작이 달라지면 동일성 주장이 깨진다.
 
@@ -300,6 +301,7 @@ MODE=easy-grouping WORK=test/work_invariance_star ./test/run_invariance.sh
 ```sh
 python3 test/make_real_fixture.py test/fixture_real
 FIXTURE=$PWD/test/fixture_real WORK=$PWD/test/work_real ./test/run_equivalence.sh
+./test/run_flush.sh
 ```
 
 ---
@@ -344,3 +346,88 @@ FIXTURE=$PWD/test/fixture_real WORK=$PWD/test/work_real ./test/run_equivalence.s
 
 `db.parameters`의 `Creation_date`는 그대로 둔다. 날짜는 의도된 메타데이터지 결함이 아니다.
 그래서 `db.parameters`는 날짜가 바뀌면 바이트가 바뀐다 — 비교에서 그 줄은 제외한다.
+
+---
+
+## 9. 다중 flush 라운드, 그리고 star가 `--max-ram`을 무시하던 문제 (2026-10-14)
+
+### 9.1 왜 리드를 늘리는 걸로는 안 되는가
+
+flush는 버퍼에 쌓인 pair 수가 `getRelationBudget(--max-ram)`에 닿을 때 일어난다. 기본
+`--max-ram 128`에서 이 예산은 **3억 8천만 pair**다(이 장비 실측). fixture를 그 위로 올리려면:
+
+| | pair/read | 2라운드에 필요한 read pair |
+|---|---|---|
+| clique | 35.7 | `--max-ram 2`로 낮추면 12만에서 101라운드 — 실측 확인 |
+| star | 6.7 | 12만에서도 **1라운드**. `--max-ram 2`로도 1라운드 |
+
+`--max-ram`은 flush 예산만이 아니라 질의 k-mer 버퍼도 정한다. `--max-ram 1`에서는
+`Query k-mer number : 0`으로 추출 자체가 실패했다. 둔기다.
+
+star를 다중 라운드로 보내려면 50만 pair 이상이 필요한데, 생성에도 실행에도 CI가
+감당할 양이 아니다.
+
+### 9.2 `--max-buffered-pairs`
+
+flush 트리거만 직접 정하는 인자를 더했다. **0이 기본이고, 0이면 예전 그대로
+`--max-ram`에서 유도한다** — 기존 경로는 한 바이트도 안 바뀐다.
+
+같이 바꾼 것 하나: 스테이지 배치 크기를 `min(4096/shard, 예산/버퍼수)`로 제한했다. 배치가
+가득 차야 drain이 돌고 예산은 drain 안에서만 확인되므로, 배치가 예산보다 크면 트리거에
+영영 못 닿는다. 기본 예산에서는 `예산/버퍼수`가 백만 단위라 이 상한이 걸리지 않는다.
+
+### 9.3 그래도 star는 1라운드였다 — 진짜 원인
+
+예산을 200까지 낮춰도 star는 여전히 1라운드에 117,710 pair, 예산의 **588배**를 들고 있었다.
+
+`GroupGenerator.cpp`의 k-mer 콜백은 star 분기 끝에서 **`return`** 했고, 예산 검사는 그
+아래 clique 루프 다음에 있었다. 즉 **star 모드에서는 스캔 도중 flush가 한 번도 일어날 수
+없었다.** `--max-ram`이 star에서 무시된다는 뜻이다 — CAMI2 strain-madness의 star 간선
+7.87억 pair(60 B/pair면 약 47 GB)가 선언한 값과 무관하게 통째로 메모리에 머물렀다.
+
+`return`을 `else`로 바꿔 두 분기가 같은 검사로 떨어지게 했다. 이것이
+`Metabuli_work/research.md` §11-8("star의 다중 flush는 실행된 적이 없다")의 원인이고,
+이제 닫혔다.
+
+### 9.4 결과 — `test/run_flush.sh`
+
+실제 서열 fixture(17,556 pair), 같은 입력을 예산만 바꿔 가며.
+
+| 모드 | 예산 | 라운드 | `groups`·`groupMap`·`skipped_kmers` |
+|---|---|---|---|
+| grouping | 0 (유도) | 1 | 기준 |
+| | 20,000 | 305 | 동일 |
+| | 2,000 | 5,730 | 동일 |
+| | 200 | 48,065 | 동일 |
+| easy-grouping | 0 (유도) | 1 | 기준 |
+| | 20,000 | 26 | 동일 |
+| | 2,000 | 429 | 동일 |
+| | 200 | **6,315** | 동일 |
+
+가중치가 포화 덧셈이라 병합이 결합적이고, 따라서 라운드가 어떻게 쪼개지든 답이 같다 —
+그 주장을 되풀이하는 대신 측정했다.
+
+### 9.5 metabuli와의 관계
+
+`run_equivalence.sh`는 기본 경로(`--max-buffered-pairs 0`)만 비교하므로 §7·§8의 결과는
+그대로다 — 두 fixture 모두 결과 18파일 바이트 동일, 재확인했다. 새 경고도 0이다(줄 번호를
+지운 경고 집합의 차집합이 공집합).
+
+다만 §9.3의 수정은 **기본 경로의 동작도 바꾼다**: 큰 데이터에서 star는 이제 flush를 하고,
+metabuli는 안 한다. 산출물은 같다(§9.4가 그것을 보인 것이다). 다른 것은 메모리 사용량이고,
+metamoim 쪽이 선언한 `--max-ram`을 지킨다.
+
+### 9.6 CI 비용
+
+20코어 기준 실측:
+
+| 단계 | 시간 |
+|---|---|
+| `run_equivalence.sh` (합성) | 42 s |
+| `run_equivalence.sh` (실제 서열) | 43 s |
+| `run_invariance.sh` × 2 | 25 s |
+| `run_flush.sh` (기본 예산 `0 20000`) | 12 s |
+
+fixture는 생성물이라 저장소에 안 들어간다(합성 8.7 MB, 실제 13 MB + NCBI 캐시).
+`run_flush.sh`의 기본 sweep은 `0 20000`이다. `BUDGETS="0 20000 2000 200"`까지 돌리면
+clique 48,065라운드 때문에 혼자 8분을 넘으니, 깊은 sweep은 수동이나 nightly로 돌린다.
