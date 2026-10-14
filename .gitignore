@@ -45,3 +45,6 @@ temp*
 plan*
 research*
 paper_write/
+
+test/fixture/
+test/work*/
