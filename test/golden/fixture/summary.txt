@@ -1,0 +1,33 @@
+# reads
+read pairs                12000
+labelled before           6572
+
+# common k-mer list
+k-mers kept               2244
+taxa                      8
+
+# grouping
+group          groups 12       grouped reads 11096     Core threshold: 52 (overlap ratio 0.50 x 104.87 k-mers/read)
+cap            groups 12       grouped reads 11090     Core threshold: 52 (overlap ratio 0.50 x 104.87 k-mers/read)
+easy           groups 234      grouped reads 6989      Core threshold: 52 (overlap ratio 0.50 x 104.87 k-mers/read)
+common k-mer hits removed 132435
+k-mers skipped, auto cap  0
+k-mers skipped, cap 30    1715
+
+# propagation
+apply          labelled after 11587     groups given a label 12
+apply_easy     labelled after 9763      groups given a label 234
+
+# grade, against the answer sheet
+## group   purity / recall / F1
+class      1 0.0894016 0.16413
+order      1 0.0894016 0.16413
+family     1 0.0894016 0.16413
+genus      1 0.175379 0.29842
+species    1 0.348864 0.517271
+## easy   purity / recall / F1
+class      1 0.0270425 0.0526609
+order      1 0.0270425 0.0526609
+family     1 0.0270425 0.0526609
+genus      1 0.0437831 0.0838931
+species    1 0.0776935 0.144185

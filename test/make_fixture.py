@@ -145,10 +145,13 @@ def main():
     simulate.write_reads(os.path.join(out, "reads"), reads)
     simulate.write_classification(os.path.join(out, "classification.tsv"), rng, reads,
                                   truth, sorted({s for _, _, s, _ in ASSEMBLIES}))
-    simulate.write_answer(os.path.join(out, "answer.tsv"), reads, truth)
+    simulate.write_query_names(os.path.join(out, "query_names.txt"), reads)
 
     with open(os.path.join(out, "fixture.conf"), "w") as f:
-        f.write("GTDB=1\nACC2TAXID=taxonomy/taxid.map\n")
+        # GRADE: gradeGroup's answer sheet is assembly accession -> taxid, which taxid.map
+        # already is. test-type gtdb pulls the accession back out of the read name.
+        f.write("GTDB=1\nACC2TAXID=taxonomy/taxid.map\n"
+                "GRADE=1\nGRADE_ANSWER=taxonomy/taxid.map\nGRADE_TYPE=gtdb\n")
 
     print("genomes      %d x %d bp" % (len(ASSEMBLIES), GENOME_LEN))
     print("read pairs   %d" % len(reads))

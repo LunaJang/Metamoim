@@ -78,7 +78,9 @@ def write_classification(path, rng, reads, truth, all_taxids):
                     % (name, t, n, round(0.50 + rng.random() * 0.50, 3)))
 
 
-def write_answer(path, reads, truth):
+def write_query_names(path, reads):
+    """One line per read pair, in the order grouping reads them. gradeGroup indexes this
+    by the read id its group files carry."""
     with open(path, "w") as f:
         for name, _, _ in reads:
-            f.write("%s\t%d\n" % (name, truth[name]))
+            f.write("%s\n" % name)

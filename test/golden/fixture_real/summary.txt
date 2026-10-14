@@ -1,0 +1,22 @@
+# reads
+read pairs                17556
+labelled before           9617
+
+# common k-mer list
+k-mers kept               508
+taxa                      6
+
+# grouping
+group          groups 7        grouped reads 17551     Core threshold: 57 (overlap ratio 0.50 x 114.45 k-mers/read)
+cap            groups 9        grouped reads 17536     Core threshold: 57 (overlap ratio 0.50 x 114.45 k-mers/read)
+easy           groups 341      grouped reads 10713     Core threshold: 57 (overlap ratio 0.50 x 114.45 k-mers/read)
+common k-mer hits removed 23058
+k-mers skipped, auto cap  21
+k-mers skipped, cap 30    3275
+
+# propagation
+apply          labelled after 17553     groups given a label 7
+apply_easy     labelled after 14428     groups given a label 341
+
+# grade
+not graded: this fixture's read names carry no assembly accession

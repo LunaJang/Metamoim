@@ -431,3 +431,92 @@ metamoim 쪽이 선언한 `--max-ram`을 지킨다.
 fixture는 생성물이라 저장소에 안 들어간다(합성 8.7 MB, 실제 13 MB + NCBI 캐시).
 `run_flush.sh`의 기본 sweep은 `0 20000`이다. `BUDGETS="0 20000 2000 200"`까지 돌리면
 clique 48,065라운드 때문에 혼자 8분을 넘으니, 깊은 sweep은 수동이나 nightly로 돌린다.
+
+---
+
+## 10. push 검사로 전환 (2026-10-14)
+
+§7~§9의 장치는 전부 metabuli 바이너리가 있어야 돌았다. 매 push마다 Metabuli를 같이
+빌드하는 것은 현실적이지 않으므로, **기대 출력을 저장소에 고정**하는 쪽으로 바꿨다.
+
+### 10.1 두 층
+
+| 층 | 파일 | 잡는 것 |
+|---|---|---|
+| 정확 일치 | `test/golden/<fixture>/manifest.sha256` | 산출물 21개의 sha256. **무엇이든** 바뀌면 걸린다 |
+| 의미 | `test/golden/<fixture>/summary.txt` | 그룹 수, 제거된 공통 k-mer 수, κ̄·τ, 전파 전후 라벨 수, `gradeGroup`의 랭크별 purity/recall/F1 |
+
+manifest는 "바뀌었다"를, summary는 "무엇이 바뀌었다"를 말한다. 둘 다 합쳐 28 KB라
+저장소에 부담이 없고, summary는 리뷰에서 diff가 그대로 읽힌다.
+
+### 10.2 성능 개선으로 값이 달라지면
+
+**그게 걸리는 것이 의도다.** 절차는 이렇다.
+
+1. push → `run_golden.sh` 실패 → "출력이 달라졌다"
+2. 의도치 않았으면 고친다
+3. 의도했으면 `./test/run_golden.sh --update`로 golden을 갱신하고 **같은 커밋에** 넣는다
+4. 리뷰어는 코드 diff 옆에서 summary diff를 본다 — 그룹이 12개에서 9개가 됐다든가,
+   species purity가 1.0에서 0.97이 됐다든가가 숫자로 보인다
+
+순수한 최적화라면 diff가 없다. diff가 났는데 최적화라고 주장한다면, 그 주장을 증명할
+책임이 diff에 적혀 있다.
+
+`run_equivalence.sh`는 남아 있되 **매 push에서는 안 돈다**(`workflow_dispatch` 전용).
+역할이 달라졌다 — golden이 "지난번에 우리가 쓴 것"이 아니라 "Metabuli `64680ee4`가
+낸 것"임을 다시 못 박는 용도다. golden을 갱신할 때 같이 돌린다.
+
+### 10.3 네트워크 제거
+
+실제 서열 6개와 그 taxonomy XML(합계 200 KB)을 `test/data/`에 커밋했다. accession이
+버전까지 고정이고 RefSeq는 버전을 재발행하지 않으므로 받아올 이유가 없다. `--refresh`로
+다시 받을 수는 있다.
+
+### 10.4 채점이 붙었다
+
+`gradeGroup`이 `summary.txt`의 일부로 돌아간다. 답지는 `taxonomy/taxid.map`
+(assembly accession → taxid)이고, 리드 이름에서 accession을 되찾는 것은
+`--test-type gtdb`다. 합성 fixture 기준 현재값:
+
+```
+group  purity 1 / recall 0.3489 / F1 0.5173   (species)
+easy   purity 1 / recall 0.0777 / F1 0.1442   (species)
+```
+
+실제 서열 fixture는 채점하지 않는다. 리드 이름이 `NC_045512.2_...`라 `gradeGroup`의
+gtdb 모드가 찾는 GCF/GCA accession이 없고, 파서를 맞추려고 리드 이름을 가짜 assembly
+accession으로 바꾸는 것은 데이터를 지어내는 일이다.
+
+### 10.5 fold 경로도 밟았다
+
+§6에서 "`--max-tmp-disk` fold는 안 밟혔다"고 적었는데, **틀렸다. 시도를 안 했을 뿐이다.**
+`--max-tmp-disk`만 낮추면 fold가 안 걸린다 — fold는 flush 라운드 경계에서 일어나므로
+라운드가 1회면 기회가 없다. `--max-buffered-pairs`와 같이 주면 걸린다.
+
+| 모드 | `--max-buffered-pairs 2000 --max-tmp-disk 4` | 결과 |
+|---|---|---|
+| grouping | 48 folds | 무제한 실행과 동일 |
+| easy-grouping | 2 folds | 동일 |
+
+`run_flush.sh`에 넣었다. 남아 있던 미실행 경로가 없다.
+
+### 10.6 워크플로
+
+`.github/workflows/test.yml`.
+
+| job | 언제 | 하는 일 |
+|---|---|---|
+| `golden` | 모든 push·PR | metamoim만 빌드 → fixture 생성 → golden·불변성·flush/fold. 로컬 20코어 기준 약 1분 |
+| `equivalence` | 수동 실행만 | Metabuli `64680ee4`도 빌드해서 §7~§9를 다시 돌린다 |
+
+ccache를 `actions/cache`로 재사용한다. 실패하면 `summary.txt`·`manifest.sha256`·로그를
+artifact로 올린다.
+
+**아직 저장소에 remote가 없어 실제로 돌아본 적은 없다.** 스크립트는 전부 로컬에서
+종료 코드 0으로 통과했다.
+
+### 10.7 fixture 오염 수정
+
+`create-common-kmer-list`가 FASTA 목록 옆에 `.unmapped`를 쓴다. 입력 디렉터리에 쓰는
+것이므로 `pipeline.sh`가 목록을 실행 디렉터리로 복사해서 넘긴다. gitignore로 덮는 대신
+fixture를 읽기 전용으로 유지했다.

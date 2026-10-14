@@ -10,7 +10,9 @@ The reads are still simulated: there is no public read set that covers six speci
 known truth. What this fixture replaces is the sequence, which is where composition,
 repeats and real cross-species homology live.
 
-Downloads from NCBI on first run and caches under <outdir>/cache.
+The sequence and the taxonomy are committed under test/data, so a run needs no network.
+--refresh fetches them from NCBI again; the accessions are versioned and RefSeq does not
+reissue a version, so a refresh should be a no-op.
 """
 
 import argparse
@@ -38,8 +40,8 @@ GENOMES = [
 ]
 
 
-def fetch(url, path):
-    if os.path.exists(path) and os.path.getsize(path) > 0:
+def fetch(url, path, refresh):
+    if not refresh and os.path.exists(path) and os.path.getsize(path) > 0:
         return open(path, "rb").read()
     with urllib.request.urlopen(url, timeout=120) as r:
         data = r.read()
@@ -91,17 +93,19 @@ def species_of(tid, nodes):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("outdir")
+    ap.add_argument("--refresh", action="store_true",
+                    help="fetch the sequence and taxonomy from NCBI again")
     args = ap.parse_args()
     out = os.path.abspath(args.outdir)
-    cache = os.path.join(out, "cache")
-    os.makedirs(cache, exist_ok=True)
+    data = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+    os.makedirs(data, exist_ok=True)
 
     accs = ",".join(a for a, _, _ in GENOMES)
     taxids = ",".join(str(t) for _, t, _ in GENOMES)
     fa = fetch("%s?db=nuccore&id=%s&rettype=fasta&retmode=text" % (EUTILS, accs),
-               os.path.join(cache, "genomes.fna")).decode()
+               os.path.join(data, "genomes.fna"), args.refresh).decode()
     tx = fetch("%s?db=taxonomy&id=%s&retmode=xml" % (EUTILS, taxids),
-               os.path.join(cache, "taxonomy.xml")).decode()
+               os.path.join(data, "taxonomy.xml"), args.refresh).decode()
 
     seqs = read_fasta(fa)
     missing = [a for a, _, _ in GENOMES if a not in seqs]
@@ -146,10 +150,13 @@ def main():
     simulate.write_reads(os.path.join(out, "reads"), reads)
     simulate.write_classification(os.path.join(out, "classification.tsv"), rng, reads,
                                   truth, sorted(set(sp.values())))
-    simulate.write_answer(os.path.join(out, "answer.tsv"), reads, truth)
+    simulate.write_query_names(os.path.join(out, "query_names.txt"), reads)
 
     with open(os.path.join(out, "fixture.conf"), "w") as f:
-        f.write("GTDB=0\nACC2TAXID=acc2taxid.tsv\n")
+        # GRADE=0: gradeGroup recovers a read's source from its name, and its gtdb mode
+        # wants a GCF/GCA accession. These reads carry NC_ accessions, and renaming them to
+        # look like assemblies would be inventing data to satisfy a parser.
+        f.write("GTDB=0\nACC2TAXID=acc2taxid.tsv\nGRADE=0\n")
 
     print("genomes    %d real, %d distinct species, %d bp total"
           % (len(GENOMES), len(set(sp.values())), sum(len(seqs[a]) for a, _, _ in GENOMES)))

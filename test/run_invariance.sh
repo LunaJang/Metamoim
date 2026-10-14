@@ -7,14 +7,14 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 BIN=${BIN:-$HERE/../build/src/metamoim}
 WORK=${WORK:-$HERE/work_invariance}
 FIXTURE=$HERE/fixture
-CKL=${CKL:-$HERE/work/metamoim_a/ckl}
+CKL=${CKL:-$HERE/work_golden/fixture/ckl}
 
 THREAD_GRID=${THREAD_GRID:-"1 4 16"}
 PARTITION_GRID=${PARTITION_GRID:-"1 4 16"}
 MODE=${MODE:-grouping}
 
 [ -x "$BIN" ] || { echo "no binary at $BIN" >&2; exit 1; }
-[ -f "$CKL/kmer_params" ] || { echo "no common k-mer list at $CKL; run run_equivalence.sh first" >&2; exit 1; }
+[ -f "$CKL/kmer_params" ] || { echo "no common k-mer list at $CKL; run run_golden.sh first" >&2; exit 1; }
 
 rm -rf "$WORK"
 mkdir -p "$WORK"

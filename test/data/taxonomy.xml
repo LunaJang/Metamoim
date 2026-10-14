@@ -1,0 +1,551 @@
+<?xml version="1.0" ?>
+<!DOCTYPE TaxaSet PUBLIC "-//NLM//DTD Taxon, 14th January 2002//EN" "https://www.ncbi.nlm.nih.gov/entrez/query/DTD/taxon.dtd">
+<TaxaSet><Taxon>
+    <TaxId>2697049</TaxId>
+    <ScientificName>Severe acute respiratory syndrome coronavirus 2</ScientificName>
+    <OtherNames>
+        <Acronym>SARS-CoV-2</Acronym>
+        <EquivalentName>2019-nCoV</EquivalentName>
+        <EquivalentName>COVID-19 virus</EquivalentName>
+        <EquivalentName>HCoV-19</EquivalentName>
+        <EquivalentName>Human coronavirus 2019</EquivalentName>
+        <EquivalentName>SARS-2</EquivalentName>
+        <EquivalentName>SARS-CoV2</EquivalentName>
+        <EquivalentName>SARS2</EquivalentName>
+        <Name>
+            <ClassCDE>misspelling</ClassCDE>
+            <DispName>COVID-19</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>misspelling</ClassCDE>
+            <DispName>COVID19</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>misspelling</ClassCDE>
+            <DispName>Wuhan coronavirus</DispName>
+        </Name>
+        <Name>
+            <ClassCDE>misspelling</ClassCDE>
+            <DispName>Wuhan seafood market pneumonia virus</DispName>
+        </Name>
+    </OtherNames>
+    <ParentTaxId>3418604</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Betacoronavirus; Sarbecovirus; Betacoronavirus pandemicum</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>694002</TaxId>
+            <ScientificName>Betacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509511</TaxId>
+            <ScientificName>Sarbecovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3418604</TaxId>
+            <ScientificName>Betacoronavirus pandemicum</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2020/01/09 14:34:33</CreateDate>
+    <UpdateDate>2022/08/12 11:00:36</UpdateDate>
+    <PubDate>2020/01/16 01:09:11</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>1335626</TaxId>
+    <ScientificName>Middle East respiratory syndrome-related coronavirus</ScientificName>
+    <OtherNames>
+        <Acronym>MERS</Acronym>
+        <Acronym>MERS-CoV</Acronym>
+        <EquivalentName>MERS coronavirus</EquivalentName>
+        <EquivalentName>MERS virus</EquivalentName>
+        <EquivalentName>Middle East Respiratory Syndrome Coronavirus (MERS-CoV)</EquivalentName>
+        <EquivalentName>Middle East respiratory syndrome coronavirus</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>3433633</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Betacoronavirus; Merbecovirus; Betacoronavirus cameli</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>694002</TaxId>
+            <ScientificName>Betacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509494</TaxId>
+            <ScientificName>Merbecovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3433633</TaxId>
+            <ScientificName>Betacoronavirus cameli</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2013/05/20 14:18:03</CreateDate>
+    <UpdateDate>2025/06/03 12:44:38</UpdateDate>
+    <PubDate>2013/05/22 13:01:41</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>11137</TaxId>
+    <ScientificName>Human coronavirus 229E</ScientificName>
+    <OtherNames>
+        <Acronym>HCoV-229E</Acronym>
+        <EquivalentName>Coronavirus 229E</EquivalentName>
+        <EquivalentName>Human coronavirus (STRAIN 229E)</EquivalentName>
+        <EquivalentName>Human coronavirus serogroup 229E</EquivalentName>
+        <EquivalentName>Human coronavirus strain 229E</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>3433756</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Alphacoronavirus; Duvinacovirus; Alphacoronavirus chicagoense</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>693996</TaxId>
+            <ScientificName>Alphacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509480</TaxId>
+            <ScientificName>Duvinacovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3433756</TaxId>
+            <ScientificName>Alphacoronavirus chicagoense</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>1995/02/27 09:24:00</CreateDate>
+    <UpdateDate>2025/06/03 12:49:44</UpdateDate>
+    <PubDate>1993/04/24 01:00:00</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>31631</TaxId>
+    <ScientificName>Human coronavirus OC43</ScientificName>
+    <OtherNames>
+        <Acronym>HCoV-OC43</Acronym>
+        <EquivalentName>Human coronavirus (strain OC43)</EquivalentName>
+        <EquivalentName>Human coronavirus strain OC43</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>694003</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Betacoronavirus; Embecovirus; Betacoronavirus gravedinis; Betacoronavirus 1</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>694002</TaxId>
+            <ScientificName>Betacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509481</TaxId>
+            <ScientificName>Embecovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3433757</TaxId>
+            <ScientificName>Betacoronavirus gravedinis</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>694003</TaxId>
+            <ScientificName>Betacoronavirus 1</ScientificName>
+            <Rank>no rank</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>1995/02/27 09:24:00</CreateDate>
+    <UpdateDate>2020/04/07 15:24:16</UpdateDate>
+    <PubDate>1999/05/30 01:00:00</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>277944</TaxId>
+    <ScientificName>Human coronavirus NL63</ScientificName>
+    <OtherNames>
+        <Acronym>HCoV-NL63</Acronym>
+        <EquivalentName>Coronavirus NL63</EquivalentName>
+        <EquivalentName>Human coronavirus NL</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>3433809</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Alphacoronavirus; Setracovirus; Alphacoronavirus amsterdamense</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>693996</TaxId>
+            <ScientificName>Alphacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509512</TaxId>
+            <ScientificName>Setracovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3433809</TaxId>
+            <ScientificName>Alphacoronavirus amsterdamense</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2004/05/07 10:10:15</CreateDate>
+    <UpdateDate>2025/06/03 12:49:46</UpdateDate>
+    <PubDate>2004/03/17 18:03:41</PubDate>
+</Taxon>
+<Taxon>
+    <TaxId>290028</TaxId>
+    <ScientificName>Human coronavirus HKU1</ScientificName>
+    <OtherNames>
+        <Acronym>HCoV-HKU1</Acronym>
+        <EquivalentName>CoV-HKU1</EquivalentName>
+        <EquivalentName>Human CoV/HKU1</EquivalentName>
+    </OtherNames>
+    <ParentTaxId>3433758</ParentTaxId>
+    <Rank>no rank</Rank>
+    <Division>Viruses</Division>
+    <GeneticCode>
+        <GCId>1</GCId>
+        <GCName>Standard</GCName>
+    </GeneticCode>
+    <MitoGeneticCode>
+        <MGCId>0</MGCId>
+        <MGCName>Unspecified</MGCName>
+    </MitoGeneticCode>
+    <Lineage>Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes; Nidovirales; Cornidovirineae; Coronaviridae; Orthocoronavirinae; Betacoronavirus; Embecovirus; Betacoronavirus hongkongense</Lineage>
+    <LineageEx>
+        <Taxon>
+            <TaxId>10239</TaxId>
+            <ScientificName>Viruses</ScientificName>
+            <Rank>acellular root</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2559587</TaxId>
+            <ScientificName>Riboviria</ScientificName>
+            <Rank>realm</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732396</TaxId>
+            <ScientificName>Orthornavirae</ScientificName>
+            <Rank>kingdom</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732408</TaxId>
+            <ScientificName>Pisuviricota</ScientificName>
+            <Rank>phylum</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2732506</TaxId>
+            <ScientificName>Pisoniviricetes</ScientificName>
+            <Rank>class</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>76804</TaxId>
+            <ScientificName>Nidovirales</ScientificName>
+            <Rank>order</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2499399</TaxId>
+            <ScientificName>Cornidovirineae</ScientificName>
+            <Rank>suborder</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>11118</TaxId>
+            <ScientificName>Coronaviridae</ScientificName>
+            <Rank>family</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2501931</TaxId>
+            <ScientificName>Orthocoronavirinae</ScientificName>
+            <Rank>subfamily</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>694002</TaxId>
+            <ScientificName>Betacoronavirus</ScientificName>
+            <Rank>genus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>2509481</TaxId>
+            <ScientificName>Embecovirus</ScientificName>
+            <Rank>subgenus</Rank>
+        </Taxon>
+        <Taxon>
+            <TaxId>3433758</TaxId>
+            <ScientificName>Betacoronavirus hongkongense</ScientificName>
+            <Rank>species</Rank>
+        </Taxon>
+    </LineageEx>
+    <CreateDate>2004/08/10 13:24:48</CreateDate>
+    <UpdateDate>2025/06/03 12:49:44</UpdateDate>
+    <PubDate>2004/12/22 18:03:19</PubDate>
+</Taxon>
+
+</TaxaSet>
