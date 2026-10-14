@@ -1,0 +1,467 @@
+#include "common.h"
+#include "FileUtil.h"
+#include "InfoIndex.h"
+#include "TaxonomyWrapper.h"
+#include <fstream>
+#include <iostream>
+#include <unistd.h>
+#include "Debug.h"
+#include "Reporter.h"
+#include "Util.h"
+#include "sys/mman.h"
+#include <fcntl.h>
+
+const std::string atcg =
+    "................................................................"
+    ".AGCG..GT..G.CN...ACTG.A.T.......agcg..gt..g.cn...actg.a.t......"
+    "................................................................"
+    "................................................................";
+
+const std::string iRCT =
+    "................................................................"
+    ".TVGH..CD..M.KN...YSAABW.R.......tvgh..cd..m.kn...ysaabw.r......"
+    "................................................................"
+    "................................................................";
+
+
+    
+void process_mem_usage(double &vm_usage, double &resident_set) {
+  vm_usage = 0.0;
+  resident_set = 0.0;
+
+  // the two fields we want
+  unsigned long vsize;
+  long rss;
+  {
+    std::string ignore;
+    std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+    ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >>
+        ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >>
+        ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >>
+        ignore >> vsize >> rss;
+  }
+
+  long page_size_kb = sysconf(_SC_PAGE_SIZE) /
+                      1024; // in case x86-64 is configured to use 2MB pages
+  vm_usage = vsize / 1024.0;
+  resident_set = rss * page_size_kb;
+}
+
+// Mostly copied from lib/mmseqs/src/taxonomy/NcbiTaxonomy.cpp
+TaxonomyWrapper *loadTaxonomy(const std::string &dbDir,
+                              const std::string &taxonomyDir) {
+  std::string binFile = dbDir + "/taxonomyDB";
+  if (fileExist(binFile)) {
+    FILE *handle = fopen(binFile.c_str(), "r");
+    struct stat sb;
+    if (fstat(fileno(handle), &sb) < 0) {
+      Debug(Debug::ERROR) << "Failed to fstat file " << binFile << "\n";
+      EXIT(EXIT_FAILURE);
+    }
+    char *data = (char *)mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE,
+                              fileno(handle), 0);
+    if (data == MAP_FAILED) {
+      Debug(Debug::ERROR) << "Failed to mmap file " << binFile << " with error "
+                          << errno << "\n";
+      EXIT(EXIT_FAILURE);
+    }
+    fclose(handle);
+    TaxonomyWrapper *t = TaxonomyWrapper::unserialize(data);
+    if (t != NULL) {
+      t->setMmapData(data, sb.st_size);
+      return t;
+    } else {
+      Debug(Debug::WARNING) << "Outdated taxonomy information, please recreate "
+                               "with createtaxdb.\n";
+    }
+  } else if (taxonomyDir != "") {
+    return new TaxonomyWrapper(taxonomyDir + "/names.dmp",
+                               taxonomyDir + "/nodes.dmp",
+                               taxonomyDir + "/merged.dmp",
+                               false);
+  }
+  return new TaxonomyWrapper(dbDir + "/taxonomy/names.dmp",
+                             dbDir + "/taxonomy/nodes.dmp",
+                             dbDir + "/taxonomy/merged.dmp",
+                             false);
+}
+
+TaxonomyWrapper *loadTaxonomyDB(const std::string & taxDbFile) {
+  FILE *handle = fopen(taxDbFile.c_str(), "r");
+  struct stat sb;
+  if (fstat(fileno(handle), &sb) < 0) {
+    Debug(Debug::ERROR) << "Failed to fstat file " << taxDbFile << "\n";
+    EXIT(EXIT_FAILURE);
+  }
+  char *data = (char *)mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE,
+                            fileno(handle), 0);
+  if (data == MAP_FAILED) {
+    Debug(Debug::ERROR) << "Failed to mmap file " << taxDbFile << " with error "
+                        << errno << "\n";
+    EXIT(EXIT_FAILURE);
+  }
+  fclose(handle);
+  TaxonomyWrapper *t = TaxonomyWrapper::unserialize(data);
+  if (t != NULL) {
+    t->setMmapData(data, sb.st_size);
+    return t;
+  } else {
+    Debug(Debug::WARNING) << "Outdated taxonomy information, please recreate "
+                             "with createtaxdb.\n";
+  }
+}
+
+int loadDbParameters(LocalParameters &par, const std::string & dbDir) {
+  if (fileExist(dbDir + "/db.parameters")) {
+    // open db.parameters
+    std::ifstream dbParametersFile;
+    dbParametersFile.open(dbDir + "/db.parameters");
+    std::string eachLine;
+    if (dbParametersFile.is_open()) {
+      while (getline(dbParametersFile, eachLine)) {
+        std::vector<std::string> tokens = Util::split(eachLine, "\t");
+        if (tokens[0] == "Spaced_kmer_mask") {
+          if (tokens.size() < 2) {
+            continue;
+          }
+          par.spaceMask = tokens[1];
+        } else if (tokens[0] == "Accession_level") {
+          if (tokens[1] == "0" && par.accessionLevel == 1){
+            par.accessionLevel = 0;
+            cout << "Warning: Current DB doesn't support accession-level classification." << endl;
+          }
+          if (tokens[1] == "1" && par.accessionLevel == 0){
+            par.accessionLevel = 2;
+          }
+        } else if (tokens[0] == "DB_name") {
+          par.dbName = tokens[1];
+        } else if (tokens[0] == "Creation_date") {
+          par.dbDate = tokens[1];
+        } else if (tokens[0] == "Skip_redundancy") {
+          if (tokens[1] == "1") {
+            par.skipRedundancy = 1;
+          }
+        } else if (tokens[0] == "Syncmer") {
+          if (tokens[1] == "1" && par.syncmer == 0) {
+            cout << "Syncmer is enabled because the DB was created with syncmer." << endl;
+            par.syncmer = 1;
+          }     
+        } else if (tokens[0] == "Syncmer_len") {
+          cout << "s-mer length is set to " << tokens[1] << " according to the DB." << endl;
+          par.smerLen = stoi(tokens[1]);
+        } else if (tokens[0] == "Kmer_format") {
+          par.kmerFormat = stoi(tokens[1]);
+        } else if (tokens[0] == "Total_seq_length") {
+          par.dbTotalLength = std::stoul(tokens[1]);
+        } else if (eachLine == "===BEGIN_CUSTOM_METAMER===") {
+          par.customMetamer = dbDir + "/db.parameters";
+        }
+      }
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int searchAccession2TaxID(const std::string &name,
+                          const std::unordered_map<std::string, int> &acc2taxid) {
+  if (acc2taxid.find(name) != acc2taxid.end()) {
+    return acc2taxid.at(name);
+  } 
+
+  // Cannot fine with version --> Remove the version number
+  size_t pos = name.find('.');
+  if (pos != std::string::npos) {
+    std::string nameWithoutVersion = name.substr(0, pos);
+    if (acc2taxid.find(nameWithoutVersion) != acc2taxid.end()) {
+      return acc2taxid.at(nameWithoutVersion);
+    }
+  }
+
+  // With prefix? Ex) NZ_CP083375.1
+  pos = name.find('_');
+  std::string nameWithoutPrefix;
+  if (pos != std::string::npos) {
+    // Try without prefix
+    nameWithoutPrefix = name.substr(pos + 1); // CP083375.1
+    if (acc2taxid.find(nameWithoutPrefix) != acc2taxid.end()) {
+      return acc2taxid.at(nameWithoutPrefix);
+    }
+
+    // Remove version
+    pos = nameWithoutPrefix.find('.');
+    if (pos != std::string::npos) {
+      nameWithoutPrefix = nameWithoutPrefix.substr(0, pos); // CP083375
+      if (acc2taxid.find(nameWithoutPrefix) != acc2taxid.end()) {
+        return acc2taxid.at(nameWithoutPrefix);
+      }
+    }
+  }
+
+  return 0;
+}
+
+void getObservedAccessionList(
+  const string & fnaListFileName,
+  vector<string> & fastaList,
+  unordered_map<string, TaxID> & acc2taxid) 
+{
+  ifstream fileListFile(fnaListFileName);
+  if (fileListFile.is_open()) {
+    for (string eachLine; getline(fileListFile, eachLine);) {
+      fastaList.push_back(eachLine);
+    }
+  } else {
+    cout << "Cannot open file for file list" << endl;
+  } 
+
+  // Iterate through the fasta files to get observed accessions
+  size_t accCnt = 0;
+  #pragma omp parallel default(none), shared(fastaList, cout, accCnt, acc2taxid)
+  {
+    unordered_map<string, TaxID> localAcc2taxid;
+    localAcc2taxid.reserve(4096 * 4);
+        
+    #pragma omp for schedule(dynamic, 1)
+    for (size_t i = 0; i < fastaList.size(); ++i) {
+        KSeqWrapper* kseq = KSeqFactory(fastaList[i].c_str());
+        while (kseq->ReadEntry()) {
+            const KSeqWrapper::KSeqEntry & e = kseq->entry;
+            if (e.sequence.l == 0) {
+              cout << "Empty sequence in " << fastaList[i] << endl;
+            }
+            if (e.name.l == 0) {
+              cout << "Empty name in " << fastaList[i] << endl;
+            }
+            // Get the accession ID without version
+            char* pos = strchr(e.name.s, '.'); 
+            if (pos != nullptr) {
+                *pos = '\0';
+                localAcc2taxid[e.name.s] = 0;
+            } else {
+                localAcc2taxid[e.name.s] = 0;
+            }
+        }
+        delete kseq;
+    } 
+    __sync_fetch_and_add(&accCnt, localAcc2taxid.size()); 
+    #pragma omp barrier
+    
+    #pragma omp critical
+    {
+        if (acc2taxid.size() < accCnt) {
+            acc2taxid.reserve(accCnt);
+        }
+    }  
+    #pragma omp critical
+    {
+        for (const auto & acc : localAcc2taxid) {
+            acc2taxid.insert(acc);
+        }
+    }                     
+  }
+}
+
+void fillAcc2TaxIdMap(unordered_map<string, TaxID> & acc2taxid,
+                      const string & acc2taxidFileName) {
+  cout << "Load mapping from accession ID to taxonomy ID ... " << flush;
+
+  // Open the file
+  int fd = open(acc2taxidFileName.c_str(), O_RDONLY);
+  if (fd < 0) {
+      cout << "Cannot open file for mapping from accession to tax ID" << endl;
+      return;
+  }
+
+  // Get the size of the file
+  struct stat sb;
+  if (fstat(fd, &sb) == -1) {
+      cout << "Cannot get the size of the file for mapping from accession to tax ID" << endl;
+      close(fd);
+      return;
+  }
+
+  size_t fileSize = sb.st_size;
+
+  // Map the file to memory
+  char* fileData = static_cast<char*>(mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0));
+  if (fileData == MAP_FAILED) {
+      cout << "mmap failed" << endl;
+      close(fd);
+      return;
+  }
+  close(fd);  // Close the file descriptor as it is no longer needed after mmap.
+
+  // Parse the file
+  char* current = fileData;
+  char* end = fileData + fileSize;
+
+  // Skip the header line
+  while (current < end && *current != '\n') {
+      ++current;
+  }
+  ++current;  // Move past the newline
+
+  char accession[16384];
+  int taxID;
+
+  while (current < end) {
+      // Read a line
+      char* lineStart = current;
+      while (current < end && *current != '\n') {
+          ++current;
+      }
+      std::string line(lineStart, current - lineStart);
+      // Parse the line
+      if (sscanf(line.c_str(), "%s\t%*s\t%d\t%*d", accession, &taxID) == 2) {
+        // Get the accession ID without version
+        char* pos = strchr(accession, '.');
+        if (pos != nullptr) {
+          *pos = '\0';
+        }
+        auto it = acc2taxid.find(accession);
+        if (it != acc2taxid.end()) {
+          acc2taxid[accession] = taxID;
+        }
+      }
+      ++current;  // Move to the next line
+  }
+
+  // Unmap the file
+  if (munmap(fileData, fileSize) == -1) {
+      cout << "munmap failed" << endl;
+  }                                        
+  cout << "Done" << endl;
+}
+
+
+
+int hammingDist(const std::string & codon1, const std::string & codon2) {
+    int res = 0;
+    for (size_t i = 0; i < codon1.size(); i++) {
+        if (codon1[i] != codon2[i]) {
+            res++;
+        }
+    }
+    return res;
+}
+
+size_t readDbSize(const std::string& dbDir) {
+  std::cerr << "Warning: Estimated database size is used for e-value calculation." << std::endl;
+  std::cerr << "   E-value calculation may be inaccurate." << std::endl;
+  std::cerr << "   New DBs have the correct size information, offering accurate e-value calculation." << std::endl;
+  
+  const std::string path = dbDir + "/info";
+  // Get file size
+  struct stat sb;
+  if (stat(path.c_str(), &sb) == -1) {
+    std::cerr << "Cannot get the size of the info file" << std::endl;
+    exit(1);
+  }
+  // New packed DBs store the logical k-mer count in db.parameters because file
+  // size includes padded lanes in the last packed word.
+  InfoIndexMetadata infoMeta = InfoIndex::loadMetadata(path);
+  size_t fileSize = sb.st_size;
+  size_t kmerCnt = infoMeta.isPacked() ? infoMeta.idCount : fileSize / sizeof(TaxID);
+  size_t dnaLength = kmerCnt * 3;
+
+  return dnaLength * 3;  // Multiply by 3 for more conservative estimation.
+}
+
+
+uint32_t parseMask(const char* s) {
+    uint32_t v = 0;
+    while (*s) {
+        v = (v << 1) | (*s++ == '1');
+    }
+    return v;
+}
+
+uint32_t safe_right_shift_32(uint32_t value, unsigned int shift) {
+    if (shift >= 32) {
+        return 0;
+    }
+    return value >> shift;
+}
+
+uint32_t safe_left_shift_32(uint32_t value, unsigned int shift) {
+    if (shift >= 32) {
+        return 0;
+    }
+    return value << shift;
+}
+
+int getFirstOneAfterFirstZero(uint32_t mask) {
+    // 1. Find the 0-based index of the first '0' from the left (LSB)
+    // By inverting the mask, the first '0' becomes the first '1'
+    int first_zero_idx = __builtin_ctz(~mask);
+
+    // 2. Clear all bits up to and including the first '0'
+    // This creates a search mask looking strictly "after" the first 0
+    uint32_t search_mask = mask & ~((1U << (first_zero_idx + 1)) - 1);
+
+    // Edge case: if there are no 1s after the first 0
+    if (search_mask == 0) return -1; 
+
+    // 3. Find the 0-based index of the first '1' in the remaining bits
+    int first_one_idx = __builtin_ctz(search_mask);
+
+    // 4. Return the 1-based position
+    return first_one_idx;
+}
+
+uint64_t disperseBits(uint64_t source, uint64_t pattern, int chunk_size) {
+    uint64_t result = 0;
+    int result_shift = 0; // Tracks where we are writing in the result
+
+    // Create a mask to extract 'chunk_size' bits (e.g., if chunk_size is 3, mask is 0b111)
+    uint64_t mask = (1ULL << chunk_size) - 1;
+
+    while (pattern > 0) {
+        // If the current right-most bit of the pattern is 1
+        if (pattern & 1) {
+            // 1. Extract the chunk from the source
+            uint64_t chunk = source & mask;
+            
+            // 2. Place it into the result at the correct shifted position
+            result |= (chunk << result_shift);
+            
+            // 3. Shift the source down to prepare the next chunk
+            source >>= chunk_size;
+        }
+        
+        // Move to the next bit in the pattern
+        pattern >>= 1;
+        
+        // Move our writing position in the result forward by the chunk size
+        result_shift += chunk_size;
+        
+    }
+
+    return result;
+}
+
+uint64_t stretchBits(uint64_t pattern, int repeat_count) {
+    uint64_t result = 0;
+    int result_shift = 0; // Tracks where we are writing in the result
+    
+    // Create a block of 1s equal to the repeat_count (e.g., for 3, mask is 0b111)
+    uint64_t ones_chunk = (1ULL << repeat_count) - 1;
+
+    while (pattern > 0) {
+        // If the current right-most bit of the pattern is 1
+        if (pattern & 1) {
+            // Place the chunk of 1s into the result at the current position
+            result |= (ones_chunk << result_shift);
+        }
+        // Note: If the bit is 0, we do nothing, which naturally leaves 0s in the result
+        
+        // Move to the next bit in the pattern
+        pattern >>= 1;
+        
+        // Move our writing position forward by the repeat count
+        result_shift += repeat_count;
+    }
+
+    return result;
+}

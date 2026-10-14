@@ -1,0 +1,11 @@
+set(util_source_files
+        util/gradeGroup.cpp
+        util/gradeGroupByCoverage.cpp
+        util/gradeStrain.cpp
+        util/accession2taxid.cpp
+        util/accession2taxid.h
+        util/editNames.cpp
+        util/editNames.h
+        util/count_common_kmers.cpp
+        util/create_common_kmer_list.cpp
+        PARENT_SCOPE)

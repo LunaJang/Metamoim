@@ -1,0 +1,357 @@
+#include "GroupApplier.h"
+#include "FileUtil.h"
+#include "common.h"
+#include "Kmer.h"
+#include <cstdlib>
+GroupApplier::GroupApplier(LocalParameters & par) : par(par) {
+    groupFileDir    = par.filenames[0];
+    groupmapFileDir = par.filenames[1];
+    taxDbDir        = par.filenames[2];
+    orgRes          = par.filenames[3];
+    outDir          = par.filenames[4];
+    
+    taxonomy = new TaxonomyWrapper(
+                    taxDbDir + "/names.dmp",
+                    taxDbDir + "/nodes.dmp",
+                    taxDbDir + "/merged.dmp",
+                    true);
+    
+    updatedResultFileName = outDir + "/updated_classifications.tsv";
+    updatedReportFileName = outDir + "/updated_report.tsv";
+
+    // Named explicitly: Reporter's own naming reads par.filenames[3] and [4] as the classify
+    // command lays them out, and apply-group's fifth argument is the output directory, not a job
+    // id. Passing the name also leaves jobId empty, so the krona file has to be named too.
+    reporter = new Reporter(par, taxonomy, updatedReportFileName);
+}
+
+GroupApplier::~GroupApplier() {
+    delete taxonomy;
+    delete reporter;
+}
+
+void GroupApplier::startGroupApplication(const LocalParameters &par) {  
+    Buffer<Kmer> queryKmerBuffer;
+    Buffer<std::pair<uint32_t, uint32_t>> matchBuffer; // seq id, pos
+    vector<Query> queryList;
+
+    bool complete = false;
+    size_t processedReadCnt = 0;
+    size_t tries = 0;
+    size_t totalSeqCnt = 0;
+
+    vector<OrgResult> orgResult;       
+    loadOrgResult(orgResult, processedReadCnt);
+
+    unordered_map<uint32_t, unordered_set<uint32_t>> groupInfo;
+    vector<uint32_t> groupMappingInfo;
+    // No pre-sizing: loadGroupsFromFile clears the vector and fills it from the file, so a
+    // resize here was dead code that read as a bounds guarantee it did not provide.
+    loadGroupsFromFile(groupInfo, groupMappingInfo, groupFileDir, groupmapFileDir);
+
+    // applyRepLabel walks orgResults and indexes groupMappingInfo by the same counter, so the two
+    // have to describe the same reads in the same order. A shorter map is an unchecked read past
+    // the end of a vector; a longer one means the two files are from different runs and every
+    // label would be applied to the wrong read. Neither can be recovered from here.
+    if (groupMappingInfo.size() != processedReadCnt) {
+        cerr << "Error: " << groupmapFileDir << " has " << groupMappingInfo.size()
+             << " read-to-group rows but " << orgRes << " has " << processedReadCnt
+             << " classified reads." << endl;
+        cerr << "       These must be the same reads in the same order -- the grouping run and"
+             << " the classification run have to share their input." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::unordered_map<int, int> external2internalTaxId;
+    taxonomy->getExternal2internalTaxID(external2internalTaxId);
+    unordered_map<uint32_t, uint32_t> repLabel; 
+    getRepLabel(orgResult, groupInfo, repLabel, external2internalTaxId);
+    applyRepLabel(orgResult, groupMappingInfo, repLabel, external2internalTaxId);
+}
+
+
+// Kraken2's confidence, from the LCA mapping it writes in place of a score.
+//
+// The field is space separated taxon:count pairs, with 'A' for k-mers holding an ambiguous
+// nucleotide, '0' for k-mers that were queried and matched nothing, and '|:|' between the
+// mates of a pair. Q is every count except 'A', since those k-mers were never queried; N is
+// the counts whose taxon lies in the clade rooted at the assigned one, which is what makes a
+// read assigned to a genus score on its species' hits as well.
+static float kraken2Confidence(const std::string & mapping,
+                               TaxID assigned,
+                               TaxonomyWrapper * taxonomy) {
+    uint64_t queried = 0;
+    uint64_t inClade = 0;
+    size_t i = 0;
+    const size_t n = mapping.size();
+    while (i < n) {
+        while (i < n && mapping[i] == ' ') { i++; }
+        size_t end = i;
+        while (end < n && mapping[end] != ' ') { end++; }
+        if (end == i) { break; }
+        const size_t colon = mapping.rfind(':', end - 1);
+        if (colon == std::string::npos || colon < i) { i = end; continue; }
+        const std::string key = mapping.substr(i, colon - i);
+        const uint64_t count = strtoull(mapping.c_str() + colon + 1, nullptr, 10);
+        i = end;
+        if (key.empty() || key == "|") { continue; }   // the |:| that separates the mates
+        if (key == "A") { continue; }                  // ambiguous: never queried
+        queried += count;
+        if (key == "0") { continue; }                  // queried, no hit
+        const TaxID hit = static_cast<TaxID>(strtol(key.c_str(), nullptr, 10));
+        if (hit == assigned || (assigned != 0 && taxonomy->IsAncestor(assigned, hit))) {
+            inClade += count;
+        }
+    }
+    if (queried == 0) { return 0.0f; }
+    return static_cast<float>(inClade) / static_cast<float>(queried);
+}
+
+void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processedReadCnt) {
+    ifstream inFile(orgRes);
+    if (!inFile.is_open()) {
+        cerr << "Error opening file: " << orgRes << endl;
+        return;
+    }
+
+    int classificationCol = par.taxidCol - 1; 
+    int scoreCol = par.scoreCol - 1; 
+    int readNameCol = par.readIdCol - 1; 
+    if (par.weightMode == 0 || scoreCol < 0) {
+        string line;
+        while (getline(inFile, line)) {
+            if (line.empty()) continue;
+            if (line.front() == '#') continue;
+            std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
+            TaxID taxId = stoi(columns[classificationCol]);
+            orgResults.push_back({taxId, 1.0, columns[readNameCol]});
+            processedReadCnt++;
+        }
+    } else if (par.kraken2Format) {
+        string line;
+        size_t emptyMappings = 0;
+        while (getline(inFile, line)) {
+            if (line.empty()) continue;
+            if (line.front() == '#') continue;
+            std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
+            TaxID taxId = stoi(columns[classificationCol]);
+            const float score = kraken2Confidence(columns[scoreCol], taxId, taxonomy);
+            if (score == 0.0f) { emptyMappings++; }
+            orgResults.push_back({taxId, score, columns[readNameCol]});
+            processedReadCnt++;
+        }
+        if (emptyMappings > 0) {
+            cout << "Note: " << emptyMappings << " reads scored 0 from column "
+                 << (scoreCol + 1) << ", which is every unclassified read and any whose"
+                 << " k-mers were all ambiguous." << endl;
+        }
+    } else {
+        string line;
+        size_t unreadableScores = 0;
+        while (getline(inFile, line)) {
+            if (line.empty()) continue;
+            if (line.front() == '#') continue;
+            std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
+            TaxID taxId = stoi(columns[classificationCol]);
+
+            // Not every classifier writes a score. Kraken2's fifth column is its LCA mapping,
+            // which begins with a taxon id often enough to parse and with an 'A' -- its marker for
+            // ambiguous k-mers -- often enough to throw, so stof killed the run part way through a
+            // file it had been reading happily. A read whose score cannot be read scores 0, which
+            // is what --weight-mode 0 wants anyway: uniform weighting is the only mode that means
+            // anything without scores, and it ignores this value.
+            const char * scoreStr = columns[scoreCol].c_str();
+            char * scoreEnd = nullptr;
+            float score = strtof(scoreStr, &scoreEnd);
+            if (scoreEnd == scoreStr) {
+                score = 0.0f;
+                unreadableScores++;
+            }
+            orgResults.push_back({taxId, score, columns[readNameCol]});
+            processedReadCnt++;
+        }
+        if (unreadableScores > 0) {
+            cout << "Warning: column " << (scoreCol + 1) << " held no number on "
+                 << unreadableScores << " lines; those reads scored 0." << endl;
+        }
+    }
+    inFile.close();
+    cout << "Original Metabuli result loaded from " << orgRes << " successfully." << endl;
+    cout << "Number of query result: " << orgResults.size() << endl;
+}
+
+void GroupApplier::loadGroupsFromFile(unordered_map<uint32_t, unordered_set<uint32_t>> &groupInfo,
+                                        vector<uint32_t> &groupMappingInfo,
+                                        const string &groupInfoFileName,
+                                        const string &groupMappingInfoFileName) {
+    // 1. Load groupInfo
+    ifstream inFile1(groupInfoFileName);
+    if (!inFile1.is_open()) {
+        cerr << "Error opening file: " << groupInfoFileName << endl;
+        return;
+    }
+
+    string line;
+    while (getline(inFile1, line)) {
+        istringstream ss(line);
+        uint32_t groupId;
+        ss >> groupId;
+
+        uint32_t queryId;
+        while (ss >> queryId) {
+            groupInfo[groupId].insert(queryId - 1); // convert to 0-based index
+        }
+    }
+    inFile1.close();
+    cout << "Group info loaded from " << groupInfoFileName << " successfully." << endl;
+
+    // 2. Load groupMappingInfo
+    ifstream inFile2(groupMappingInfoFileName);
+    if (!inFile2.is_open()) {
+        cerr << "Error opening file: " << groupMappingInfoFileName << endl;
+        return;
+    }
+
+    groupMappingInfo.clear();
+    int groupId;
+    string readId;
+    while (inFile2 >> readId >> groupId) {
+        groupMappingInfo.emplace_back(groupId);
+    }
+    inFile2.close();
+    cout << "Query-to-group map loaded from " << groupMappingInfoFileName << " successfully." << endl;
+}
+
+void GroupApplier::getRepLabel(vector<OrgResult> &orgResults, 
+                               const unordered_map<uint32_t, unordered_set<uint32_t>> &groupInfo, 
+                                 unordered_map<uint32_t, uint32_t> &repLabel,
+                                 std::unordered_map<int, int>& external2internalTaxId) {
+    cout << "Find query group representative labels..." << endl;    
+    time_t beforeSearch = time(nullptr);
+
+    for (const auto& group : groupInfo) {
+        uint32_t groupId = group.first;
+        const unordered_set<uint32_t>& queryIds = group.second;
+
+        vector<WeightedTaxHit> setTaxa;
+
+        for (const auto& queryId : queryIds) {
+            int query_label = external2internalTaxId[orgResults[queryId].label]; 
+            if (par.weightMode == 0) {
+                float score = 1; 
+                if (query_label != 0) {
+                    setTaxa.emplace_back(query_label, score, 2);
+                }
+            } else if (par.weightMode == 1) {
+                float score = orgResults[queryId].score;
+                if (query_label != 0 && score >= par.minVoteScr) {
+                    setTaxa.emplace_back(query_label, score, 2);
+                }
+            } else if (par.weightMode == 2) {
+                float score = orgResults[queryId].score;
+                if (query_label != 0 && score >= par.minVoteScr) {
+                    setTaxa.emplace_back(query_label, score * score, 2);
+                }
+            }
+        }
+
+        WeightedTaxResult result = taxonomy->weightedMajorityLCA(setTaxa, 0.5);
+
+        if (result.taxon != 0 && result.taxon != 1) {
+            repLabel[groupId] = result.taxon;
+        }
+        else{
+            repLabel[groupId] = 0;
+        }
+    }
+
+    const string& groupRepFileName = outDir + "/groupRep";
+    ofstream outFile(groupRepFileName);
+    if (!outFile.is_open()) {
+        cerr << "Error opening file: " << groupRepFileName << endl;
+        return;
+    }
+
+    for (const auto& [groupId, groupRep] : repLabel) {
+        outFile << groupId << "\t" << taxonomy->getOriginalTaxID(groupRep) << "\n";
+    }
+
+    outFile.close();
+
+    cout << "Query group representative label saved to " << groupRepFileName << " successfully." << endl;    
+    cout << "Time spent: " << double(time(nullptr) - beforeSearch) << " seconds." << endl;
+}
+
+void GroupApplier::applyRepLabel(const vector<OrgResult>& orgResults, 
+                                   const vector<uint32_t>& groupMappingInfo, 
+                                   const unordered_map<uint32_t, uint32_t>& repLabel,
+                                   std::unordered_map<int, int>& external2internalTaxId) {
+    cout << "Apply query group representative labels..." << endl;    
+    time_t beforeSearch = time(nullptr);
+
+    vector<Query> queryList;
+
+    // 1.2.0 replaced Query's (classification, score, isClassified, name) constructor with one
+    // that takes lengths, and dropped isClassified: a read is classified iff its classification
+    // is non-zero, which held at every call site below.
+    auto makeQuery = [](int classification, float score, const std::string & name) {
+        Query q;
+        q.classification = classification;
+        q.idScore = score;
+        q.name = name;
+        return q;
+    };
+
+    for (int queryIdx = 0; queryIdx < orgResults.size() ; queryIdx++){
+        uint32_t groupId = groupMappingInfo[queryIdx];
+        auto repLabelIt = repLabel.find(groupId);
+        bool hasRepLabel = (repLabelIt != repLabel.end() && repLabelIt->second != 0);
+
+        if (hasRepLabel) {
+            // --weight-mode says how a group's members are weighted when its label is
+            // decided. It used to also decide who that label is written to: mode 0 overwrote
+            // every member, the others only the unlabelled and the low-scoring. Those are two
+            // different questions and conflating them made mode 0 unusable on a classifier
+            // that was already accurate -- it replaced correct labels with a group LCA that
+            // sits higher up the tree. Kraken2 writes no score, so mode 0 was the only mode
+            // available to it, and propagation cost it species F1 0.8262 -> 0.5705 on
+            // species-inclusion while gaining 0.4417 -> 0.5778 on species-exclusion.
+            //
+            // The rule is now the same in every mode: a member keeps its own label unless it
+            // has none or scores below the vote threshold. Under mode 0 every score is 1, so
+            // it reduces to overwriting the unlabelled, which is what propagation is for.
+            bool applyRep = (orgResults[queryIdx].label == 0
+                             || orgResults[queryIdx].score < par.minVoteScr);
+            if (applyRep) {
+                queryList.emplace_back(makeQuery(repLabelIt->second, orgResults[queryIdx].score, orgResults[queryIdx].name));
+            } else {
+                queryList.emplace_back(makeQuery(external2internalTaxId[orgResults[queryIdx].label], orgResults[queryIdx].score, orgResults[queryIdx].name));
+            }
+        } else if (orgResults[queryIdx].label != 0) {
+            queryList.emplace_back(makeQuery(external2internalTaxId[orgResults[queryIdx].label], orgResults[queryIdx].score, orgResults[queryIdx].name));
+        } else {
+            queryList.emplace_back(makeQuery(0, orgResults[queryIdx].score, orgResults[queryIdx].name));
+        }
+    }
+
+    cout << "Writing updated classification file..." << endl;
+
+    reporter->openReadClassificationFile(updatedResultFileName);
+    cout << "file opened " << queryList.size() << " queryList " << groupMappingInfo.size() << " groupMappingInfo" << endl;
+    reporter->writeReadClassification(queryList, groupMappingInfo);    
+    cout << "writing done" << endl;
+    reporter->closeReadClassificationFile();
+
+    unordered_map<TaxID, unsigned int> taxCounts;
+    for (const Query & q : queryList) {
+        ++taxCounts[q.classification];
+    }
+    reporter->writeReportFile(static_cast<int>(queryList.size()),
+                              taxCounts,
+                              ReportType::Default,
+                              outDir + "/updated_krona.html");
+    cout << "Report saved to " << updatedReportFileName << endl;
+    
+    cout << "Result saved to " << updatedResultFileName << " successfully." << endl;    
+    cout << "Time spent: " << double(time(nullptr) - beforeSearch) << " seconds." << endl;
+}

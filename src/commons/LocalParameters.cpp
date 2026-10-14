@@ -1,0 +1,1516 @@
+#include "LocalParameters.h"
+#include "Parameters.h"
+#include "Parameters.cpp"
+#include "Debug.h"
+#include "CommandCaller.h"
+#include "ByteParser.h"
+#include <iomanip>
+#include "DistanceCalculator.h"
+
+extern const char *version;
+
+LocalParameters::LocalParameters() :
+        Parameters(),
+        UNIREF_NUMBERS(UNIREF_NUMBERS_ID,
+                    "--uniref-size",
+                    "CSV of UniRef 100/90/50 cluster sizes",
+                    "CSV of UniRef 100/90/50 cluster sizes. Check UniRef release notes.",
+                    typeid(std::string),
+                    (void *) &unirefNumbers,
+                    "^.*$"),
+        VIRUS_TAX_ID(VIRUS_TAX_ID_ID,
+                     "--virus-taxid",
+                     "Taxonomy ID of virus taxon",
+                     "NCBI: 10239 \nCUSTOM: Check names.dmp file ",
+                     typeid(int),
+                     (void *) &virusTaxId,
+                     "^[0-9]+$"),
+        BACTERIA_TAX_ID(BACTERIA_TAX_ID_ID,
+                        "--bacteria-taxid",
+                        "Taxonomy ID of bacteria taxon",
+                        "NCBI: 2 [Default]\nCUSTOM: Check names.dmp file ",
+                        typeid(int),
+                        (void *) &bacteriaTaxId,
+                        "^[0-9]+$"),
+        ARCHAEA_TAX_ID(ARCHAEA_TAX_ID_ID,
+                       "--archaea-taxid",
+                       "Taxonomy ID of archaea taxon",
+                       "NCBI: 2157 [Default]\nCUSTOM: Check names.dmp file ",
+                       typeid(int),
+                       (void *) &archaeaTaxId,
+                       "^[0-9]+$"),
+        SKIP_REDUNDANCY(SKIP_REDUNDANCY_ID,
+                        "--skip-redundancy",
+                        "Not storing k-mer's redundancy.",
+                        "Not storing k-mer's redundancy.",
+                        typeid(int),
+                        (void *) &skipRedundancy,
+                        "[0-1]"),
+        VALIDATE_DB(VALIDATE_DB_ID,
+                     "--validate-db",
+                     "Validate the database",
+                     "Validate the database. It checks if all required files are present and if the k-mer count is consistent.",
+                     typeid(int),
+                     (void *) &validateDb,
+                     "[0-1]"),
+        SYNCMER(SYNCMER_ID,
+                "--syncmer",
+                "Using syncmer",
+                "Using syncmer",
+                typeid(int),
+                (void *) &syncmer,
+                "[0-1]"),
+        SMER_LEN(SMER_LEN_ID,
+                 "--smer-len",
+                 "s-mer length for syncmer selection",
+                 "s-mer length for syncmer selection",
+                 typeid(int),
+                 (void *) &smerLen,
+                 "^[0-9]+$"),
+        KMER_FORMAT(KMER_FORMAT_ID,
+                    "--kmer-format",
+                    "K-mer format",
+                    "K-mer format",
+                    typeid(int),
+                    (void *) &kmerFormat,
+                    "[1-5]"),
+        UNIREF_XML(UNIREF_XML_ID,
+                    "--uniref-xml",
+                    "Path to UniRef XML file",
+                    "Path to UniRef XML file",
+                    typeid(std::string),
+                    (void *) &unirefXml,
+                    "^.*$"),
+        PARAM_CUSTOM_METAMER(PARAM_CUSTOM_METAMER_ID,
+                    "--custom-metamer",
+                    "Path to custom metamer pattern JSON file",
+                    "Path to custom metamer pattern JSON file",
+                    typeid(std::string),
+                    (void *) &customMetamer,
+                    "^.*$"),
+        SEQ_MODE(SEQ_MODE_ID,
+                 "--seq-mode",
+                 "Sequencing type",
+                 "Single-end: 1, Paired-end: 2, Long read: 3",
+                 typeid(int),
+                 (void *) &seqMode,
+                 "[1-3]"),
+        PRECISION_MODE(PRECISION_MODE_ID,
+                    "--precise",
+                    "Use presets for precise mode. 1: short-read, 2: HiFi long-read.",
+                    "Use presets for precise mode. 1: short-read, 2: HiFi long-read.",
+                    typeid(int),
+                    (void *) &precisionMode,
+                    "[0-2]"),
+        MIN_SCORE(MIN_SCORE_ID,
+                  "--min-score",
+                  "Min. sequence similarity score",
+                  "Min. sequence similarity score (0.0-1.0)",
+                  typeid(float),
+                  (void *) &minScore,
+                  "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+        SPACE_MASK(SPACE_MASK_ID,
+               "--space-mask",
+               "Mask for spaced k-mer",
+               "Mask for spaced k-mer",
+               typeid(std::string),
+               (void *) &spaceMask,
+               "^.*$"),
+        HAMMING_MARGIN(HAMMING_MARGIN_ID,
+                       "--hamming-margin",
+                       "Allowed extra Hamming distance", 
+                       "It allows extra Hamming distance than the minimum distance.",
+                       typeid(int),
+                       (void *) &hammingMargin,
+                       ""),
+        MIN_SP_SCORE(MIN_SP_SCORE_ID,
+                     "--min-sp-score",
+                     "Min. score for species- or lower-level classification.",
+                     "Min. score for species- or lower-level classification.",
+                     typeid(float),
+                     (void *) &minSpScore,
+                     "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+        TINFO_PATH(TINFO_PATH_ID,
+                   "--tinfo-path",
+                   "Path to prodigal training information files",
+                   "Path to prodigal training information files",
+                   typeid(std::string),
+                   (void *) &tinfoPath,
+                   "^.*$"),
+        RAM_USAGE(RAM_USAGE_ID,
+                  "--max-ram",
+                  "RAM usage in GiB",
+                  "RAM usage in GiB",
+                  typeid(int),
+                  (void *) &ramUsage,
+                  "^[0-9]+$"),
+        PRINT_LOG(PRINT_LOG_ID,
+                  "--print-log",
+                  "Print logs to debug",
+                  "Print logs to debug",
+                  typeid(int),
+                  (void *) &printLog,
+                  "^[0-9]+$"),
+        MIN_AA_MATCH(MIN_AA_MATCH_ID,
+                     "--min-aa",
+                     "Min. num. of amino acid matches",
+                     "Min. number of amino acid matches for classification",
+                     typeid(int),
+                     (void *) &minAaMatch,
+                     "^[0-9]+$"),
+        MIN_AA_MATCH_EUK(MIN_AA_MATCH_EUK_ID,
+                    "--min-aa-euk",
+                    "Min. num. of amino acid matches for eukaryotes",
+                    "Min. number of amino acid matches for eukaryotic classification",
+                    typeid(int),
+                    (void *) &minAaMatchEuk,
+                    "^[0-9]+$"),
+        MATCH_PER_KMER(MATCH_PER_KMER_ID,
+                       "--match-per-kmer",
+                       "Number of matches per query k-mer. ",
+                       "Num. of matches per query k-mer. Larger values assign more memory for storing k-mer matches. ",
+                       typeid(int),
+                       (void *) &matchPerKmer,
+                       "^[0-9]+$"),
+        MIN_SS_MATCH(MIN_SS_MATCH_ID,
+                    "--min-ss-match",
+                    "Min. num. of ssp.-specific matches for ssp. classification",
+                    "Min. number of ssp.-specific matches for ssp. classification",
+                    typeid(int),
+                    (void *) &minSSMatch,
+                    "^[0-9]+$"),
+        TIE_RATIO(TIE_RATIO_ID,
+                  "--tie-ratio",
+                  "Best * --tie-ratio is considered as a tie",
+                  "Best * --tie-ratio is considered as a tie",
+                  typeid(float),
+                  (void *) &tieRatio,
+                  "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+        PRINT_LINEAGE(PRINT_LINEAGE_ID,
+                      "--lineage",
+                      "Print lineage information",
+                      "Print lineage information",
+                      typeid(int),
+                      (void *) &printLineage,
+                      "[0-1]"),
+        MAX_SHIFT(MAX_SHIFT_ID,
+                    "--max-shift",
+                    "Max codon shift to link k-mers (Default: auto. Specify to override).",
+                    "Max codon shift to link k-mers (Default: auto. Specify to override).",
+                    typeid(int),
+                    (void *) &maxShift,
+                    "[1-9]"),
+        EM(EM_ID,
+                "--em",
+                "Use Expectation-Maximization for classification",
+                "Use Expectation-Maximization for classification",
+                typeid(bool),
+                (void *) &em,
+                ""),
+        MAX_KMER_READS(MAX_KMER_READS_ID,
+                "--max-kmer-reads",
+                "Skip k-mers shared by more than this many reads (0=disabled)",
+                "Skip k-mers shared by more than this many reads (0=disabled). "
+                "Absolute cap, so it bounds the C(m,2) edges a single k-mer can emit "
+                "regardless of dataset size. A fraction of the read count cannot do that: "
+                "one value would have to fit both a 5k-read and a 62M-read run.",
+                typeid(int),
+                (void *) &maxKmerReads,
+                "^[0-9]+$"),
+        MAX_KMER_QUANTILE(MAX_KMER_QUANTILE_ID,
+                "--max-kmer-quantile",
+                "Share of k-mers the reads-per-k-mer cap keeps (0=disabled)",
+                "Picks --max-kmer-reads from the data instead of a fixed number: the cap becomes "
+                "the smallest power-of-two bound covering this share of the k-mers that occur in "
+                "at least two reads. A k-mer's read count tracks per-genome coverage, not the "
+                "size of the dataset, so one constant cannot fit two datasets while one quantile "
+                "can. Measuring the distribution costs one extra pass over the k-mer files. "
+                "Ignored when --max-kmer-reads is given; 0 disables it, leaving no cap unless "
+                "--max-kmer-reads is set.",
+                typeid(float),
+                (void *) &maxKmerQuantile,
+                "^[0-9]*\\.?[0-9]+$"),
+        MIN_OVERLAP_RATIO(MIN_OVERLAP_RATIO_ID,
+                "--min-overlap-ratio",
+                "Phase 1 core threshold as a fraction of k-mers per read",
+                "Phase 1 core threshold as a fraction of k-mers per read. "
+                "An edge weight is the number of k-mers two reads share, so this is the minimum "
+                "overlap two reads must have to be grouped. Being a ratio it does not depend on "
+                "read length or coverage, so one value transfers across datasets. Must be > 0: "
+                "there is no absolute fallback.",
+                typeid(float),
+                (void *) &minOverlapRatio,
+                "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+        NEIGHBOR_KMERS(NEIGHBOR_KMERS_ID,
+                "--neighbor-kmers",
+                "Discard common k-mer's neighbors",
+                "Discard common k-mer's neighbors",
+                typeid(int),
+                (void *) &neighborKmers,
+                "[0-4]"),
+        PDM_KMER(PDM_KMER_ID,
+                "--pdm-kmer",
+                "Number of bases from each end to extract PDM-aware neighbor k-mers",
+                "Number of bases from each end to extract PDM-aware neighbor k-mers",
+                typeid(int),
+                (void *) &pdmKmer,
+                "^[0-9]+$"),
+        SCORE_MODE(SCORE_MODE_ID,
+                   "--score-mode",
+                   "Scoring mode for classification",
+                   "0: DNA hamming dist. 1: BLOSUM62 score 2: Both",
+                   typeid(int),
+                   (void *) &scoreMode,
+                   "[0-2]"),
+        DB_TOTAL_LENGTH(DB_TOTAL_LENGTH_ID,
+                        "--db-size",
+                        "Total length of sequences in the database (nt)",
+                        "Total length of sequences in the database (nt)",
+                        typeid(size_t),
+                        (void *) &dbTotalLength,
+                        "^[0-9]+$"),
+        MAX_E_VALUE(MAX_E_VALUE_ID,
+                        "-e",
+                        "Ignore matches with larger E-value (0 to disable)",
+                        "Ignore matches with larger E-value (0 to disable)",
+                        typeid(double),
+                        (void *) &maxEValue,
+                        "^([-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)|[0-9]*(\\.[0-9]+)?$"),
+        USE_ALL_MATCHES(USE_ALL_MATCHES_ID,
+                        "--use-all-matches",
+                        "Use all k-mer matches instead of filtering",
+                        "Use all k-mer matches instead of filtering",
+                        typeid(int),
+                        (void *) &useAllMatches,
+                        "[0-1]"),
+        TIE_BRAKER(TIE_BRAKER_ID,
+                 "--priority-taxid",
+                 "Favors these and child taxa instead of LCA in case of a tie. (Comma-separated list of tax IDs.)",
+                 "Favors these and child taxa instead of LCA in case of a tie. (Comma-separated list of tax IDs.)",
+                 typeid(std::string),
+                 (void *) &priorityTaxa,
+                 "^.*$"),
+        TARGET_TAX_ID(TARGET_TAX_ID_ID,
+               "--tax-id",
+               "Tax. ID of clade. -1 for unclassified reads",
+               "Tax. ID of clade. -1 for unclassified reads",
+               typeid(int),
+               (void *) &targetTaxId,
+               "^([0-9]+|-1)$"),
+        EXTRACT_MODE(EXTRACT_MODE_ID,
+                     "--extract-format",
+                     "0: original format, 1: FASTA, 2: FASTQ",
+                     "0: original format, 1: FASTA, 2: FASTQ",
+                     typeid(int),
+                     (void *) &extractMode,
+                     "[0-2]"),
+        PARAM_OUTDIR(PARAM_OUTDIR_ID,
+                    "--outdir",
+                    "Output directory",
+                    "Output directory",
+                    typeid(std::string),
+                    (void *) &outputDir,
+                    "^.*$"),
+        WEAK_BAND_RATIO(WEAK_BAND_RATIO_ID,
+                        "--weak-band-ratio",
+                        "Weak-band lower bound as a fraction of the core threshold",
+                        "Lower bound of the weak band, as a fraction of the Phase 1 core threshold: "
+                        "weak edges are those with weight in (ratio x core, core], and an edge "
+                        "lighter than the bound is not used at all, by either the merging pass or "
+                        "the singleton pass. The same value is the singleton pass's floor. This was "
+                        "briefly an absolute count of shared k-mers (--min-edge), on the argument "
+                        "that 0.3333 reproduces an absolute 5 only where the core is 15. "
+                        "Measurement reversed that: an absolute 10 is 10/33 = 0.30 of the core on "
+                        "CAMI2 strain-madness but 10/26 = 0.38 on species-exclusion, so it is the "
+                        "absolute form that means different things on different data. And the axis "
+                        "is sharp -- on strain-madness at 16 threads, a bound of 11 gives species "
+                        "purity 0.932 while 10 gives 0.763, so one k-mer of band width is worth "
+                        "0.169 of purity. Clamped into [1, core threshold - 1], since an empty band "
+                        "leaves the later passes nothing to work with.",
+                        typeid(float),
+                        (void *) &weakBandRatio,
+                        "^[0-9]*\\.?[0-9]+$"),
+        PARTITIONS(PARTITIONS_ID,
+                        "--partitions",
+                        "Intermediate partitions for the edge graph (0=follow --threads, for reproducing old runs)",
+                        "How many partitions the edge graph is split into on disk. The routing rule "
+                        "sends an edge to one of 2*partitions+1 buckets by (id1, id2), and the "
+                        "cross bucket -- which carries about 88% of all edges -- is sharded that "
+                        "many ways again, so a flush writes 3*partitions files. This used to be the "
+                        "thread count, which made both the file count and the flush count scale "
+                        "with it: CAMI2 strain-madness went from 389 flushes x 48 units at 16 "
+                        "threads to 2,354 x 192 at 64, so the same 117.29 GB became 451,968 files "
+                        "instead of 18,672 and the run took 8h 08m instead of 3h 40m. Separating "
+                        "the two lets --threads decide only how many workers run at once. Neither "
+                        "changes the grouping: routing decides which file an edge is written to, "
+                        "not which edges exist, and the support pass counts unit pairs exactly, so "
+                        "the answer is the same at any partition count. This was not always true -- "
+                        "the support map used to be capped, and which pairs overflowed depended on "
+                        "how the edges happened to be divided -- and it is verified rather than "
+                        "assumed: partition counts 1, 4, 16 and 64 give byte-identical output. "
+                        "The default is 16, the value the published measurements used; higher "
+                        "values trade more files for smaller ones. 0 makes the count follow "
+                        "--threads, which is what runs made before this parameter did, and is kept "
+                        "only to reproduce them.",
+                        typeid(int),
+                        (void *) &partitions,
+                        "^[0-9]+$"),
+        COMMON_KMER_SPAN(COMMON_KMER_SPAN_ID,
+                    "--common-kmer-span",
+                    "K-mers discarded either side of a common-k-mer hit (0=the hit alone)",
+                    "A syncmer shared by two species cannot tell them apart, so every hit against "
+                    "the common k-mer index is removed from the query before the graph is built. "
+                    "This decides how far the removal reaches: 0 drops the hit alone, 1 drops three "
+                    "k-mers per hit, on the argument that a conserved region is not one k-mer wide. "
+                    "The wider setting was long treated as free because it removes 17% of query "
+                    "k-mers but only 0.7% of edges -- it lowers weights rather than deleting pairs, "
+                    "and --min-overlap-ratio scales with the surviving count. That argument counts "
+                    "edges, and edge count is not connectivity: the edges holding two stretches of "
+                    "one genome together are rare, so a small edge loss can still cut them and "
+                    "leave the genome in more pieces. On CAMI2 strain-madness, going from 1 to 0 "
+                    "took k-mers per read from 73.6 to 81.4 and species Recall*c from 0.164 to "
+                    "0.245, at a purity cost of 0.010.",
+                    typeid(int),
+                    (void *) &commonKmerSpan,
+                    "^[0-9]+$"),
+        MAX_TMP_DISK(MAX_TMP_DISK_ID,
+                     "--max-tmp-disk",
+                     "Peak disk (MiB) the intermediate files may occupy (0: 80% of free space)",
+                     "Upper bound on how much space the subGraph_* intermediates may hold at once. "
+                     "It is a safety cap, not a performance target: when the data fits under it "
+                     "nothing changes, and only a run that would otherwise fill the filesystem pays "
+                     "for folding early. Results are identical either way. 0 derives the cap from "
+                     "the free space at the output directory when the run starts.",
+                     typeid(int),
+                     (void *) &maxTmpDiskMiB,
+                     "^[0-9]+$"),
+        MIN_EDGE_WEIGHT(MIN_EDGE_WEIGHT_ID,
+                        "--min-edge",
+                        "Min. edge weight for read grouping",
+                        "Min. edge weight for read grouping",
+                        typeid(int),
+                        (void *) &minEdgeWeight,
+                        "^[0-9]+$"),
+        MIN_VOTE_SCORE(MIN_VOTE_SCORE_ID,
+                    "--min-vote-score",
+                    "Min. classification score to vote.",
+                    "Min. classification score to vote.",
+                    typeid(float),
+                    (void *) &minVoteScr,
+                    "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+        KRAKEN2_FORMAT(KRAKEN2_FORMAT_ID,
+                  "--kraken2",
+                  "Read --score-col as Kraken2's LCA mapping and score it.",
+                  "Kraken2 writes no score, but its fifth output field is the LCA mapping:\n"
+                  "              space separated taxon:count pairs, 'A' for k-mers holding an\n"
+                  "              ambiguous nucleotide and '0' for k-mers queried without a hit,\n"
+                  "              with '|:|' between the mates of a pair. With this flag the column\n"
+                  "              named by --score-col is read that way and each read is scored as\n"
+                  "              Kraken2's confidence: the k-mers mapped to the clade rooted at the\n"
+                  "              assigned taxon, over the k-mers actually queried, which is every\n"
+                  "              count except 'A'. That makes --weight-mode 1 usable on Kraken2.",
+                  typeid(bool),
+                  (void *) &kraken2Format,
+                  ""),
+        SCORE_COL(SCORE_COL_ID,
+                  "--score-col",
+                  "Score column index (ONE-based; apply-group only reader).",
+                  "Score column index. ONE-based -- apply-group subtracts one before indexing,\n"
+                  "              and it is the only command that reads this. Unlike --readid-col\n"
+                  "              and --taxid-col, there is no zero-based reader to disagree with.",
+                  typeid(int),
+                  (void *) &scoreCol,
+                  "^[0-9]+$"),
+        WEIGHT_MODE(WEIGHT_MODE_ID,
+                    "--weight-mode",
+                    "Majority LCA weight mode.",
+                    "How a group's members are weighted when its label is decided. 0:uniform, 1:score, 2:score squared. It does not decide who the label is written to -- that is always the members with no label of their own, or one scoring below --min-vote-score",
+                    typeid(int),
+                    (void *) &weightMode,
+                    "[0-2]"),
+        LIBRARY_PATH(LIBRARY_PATH_ID,
+                     "--library-path",
+                     "Path to library where the FASTA files are stored",
+                     "Path to library where the FASTA files are stored",
+                     typeid(std::string),
+                     (void *) &libraryPath,
+                     "^.*$"),
+        TAXONOMY_PATH(TAXONOMY_PATH_ID,
+                      "--taxonomy-path",
+                      "Directory where the taxonomy dump files are stored",
+                      "Directory where the taxonomy dump files are stored",
+                      typeid(std::string),
+                      (void *) &taxonomyPath,
+                      "^.*$"),
+        IS_ASSEMBLY(IS_ASSEMBLY_ID,
+                    "--assembly",
+                    "Input is an assembly",
+                    "Input is an assembly",
+                    typeid(bool),
+                    (void *) &assembly,
+                    ""),
+        SPLIT_NUM(SPLIT_NUM_ID,
+                  "--split-num",
+                  "A database is divided to N splits (offsets). During classification, unnecessary splits are skipped",
+                  "A database is divided to N splits (offsets). During classification, unnecessary splits are skipped",
+                  typeid(int),
+                  (void *) &splitNum,
+                  "^[0-9]+$"),
+        BUFFER_SIZE(BUFFER_SIZE_ID,
+                    "--buffer-size",
+                    "Buffer size (the number of k-mers)",
+                    "Buffer size (the number of k-mers)",
+                    typeid(size_t),
+                    (void *) &bufferSize,
+                    "^[0-9]+$"),
+        ACCESSION_LEVEL(ACCESSION_LEVEL_ID,
+                        "--accession-level",
+                        "Accession-level DB build/search",
+                        "Build or search a database for accession-level classification",
+                        typeid(int),
+                        (void *) &accessionLevel,
+                        "[0-1]"),
+        DB_NAME(DB_NAME_ID,
+                "--db-name",
+                "Name of the database (a random number as default)",
+                "Name of the database",
+                typeid(std::string),
+                (void *) &dbName,
+                "^.*$"),
+        DB_DATE(DB_DATE_ID,
+                "--db-date",
+                "Date of the database creation (current date as default)",
+                "Date of the database creation",
+                typeid(std::string),
+                (void *) &dbDate,
+                "^.*$"),
+        CDS_INFO(CDS_INFO_ID,
+                 "--cds-info",
+                 "List of CDS files. Set 'x' for six-frame translation.",
+                 "List of CDS files. Set 'x' for six-frame translation.",
+                 typeid(std::string),
+                 (void *) &cdsInfo,
+                 "^.*$"),
+        MAKE_LIBRARY(MAKE_LIBRARY_ID,
+                     "--make-library",
+                     "Make species library. Use it when multiple species are in the same FASTA.",
+                     "Make library.",
+                     typeid(int),
+                     (void *) &makeLibrary,
+                     "[0-1]"),
+        GTDB(GTDB_ID,
+                "--gtdb",
+                "GTDB-based database creation",
+                "GTDB-based database creation",
+                typeid(int),
+                (void *) &gtdb,
+                "[0-1]"),
+        VALIDATE_INPUT(VALIDATE_INPUT_ID,
+                      "--validate-input",
+                      "Validate format of input FASTA/FASTQ file(s)",
+                      "Validate format of input FASTA/FASTQ file(s)",
+                      typeid(int),
+                      (void *) &validateInput,
+                      "[0-1]"),
+        READING_FRAME(READING_FRAME_ID,
+                "--reading-frame",
+                "Use fixed frame (1-6). 0 for Prodigal's frame.",
+                "Use fixed frame (1-6). 0 for Prodigal's frame.",
+                typeid(int),
+                (void *) &readingFrame,
+                "^[0-6]$"),
+        NO_MASK_TAXA(NO_MASK_TAXA_ID,
+                "--no-mask-taxa",
+                "Comma-separated tax IDs to not mask low-complexity regions",
+                "Comma-separated tax IDs to not mask low-complexity regions",
+                typeid(std::string),
+                (void *) &noMaskTaxa,
+                "^.*$"),
+        PACK_INFO(PACK_INFO_ID,
+                "--pack-info",
+                "Pack final info index",
+                "Pack final info index. Set to 0 to keep the legacy uint32 info file.",
+                typeid(int),
+                (void *) &packInfo,
+                "[0-1]"),
+        NEW_TAXA(NEW_TAXA_ID,
+                "--new-taxa",
+                "TSV file of new taxa to be added",
+                "TSV file of new taxa to be added",
+                typeid(std::string),
+                (void *) &newTaxa,
+                "^.*$"),
+        TEST_RANK(TEST_RANK_ID,
+                  "--test-rank",
+                  ".",
+                  "csv of ranks to be tested",
+                  typeid(std::string),
+                  (void *) &testRank,
+                  "^.*$"),
+        TEST_TYPE(TEST_TYPE_ID,
+                  "--test-type",
+                  ".",
+                  "Test Type",
+                  typeid(std::string),
+                  (void *) &testType,
+                  "^.*$"),
+        // The base is NOT the same in every command that takes these, and it cannot be unified
+        // without changing what every existing script means:
+        //   grade, gradeByCoverage, gradeGroup*, gradeStrain -- ZERO-based (fields[col])
+        //   apply-group, binning2report                      -- ONE-based  (fields[col - 1])
+        // Centrifuge writes readID/seqID/taxID, so it is --readid-col 0 --taxid-col 2 for grade
+        // but --readid-col 1 --taxid-col 3 for apply-group. Getting this wrong used to segfault
+        // grade and to make gradeByCoverage silently score nothing; both now stop with a message
+        // naming the field count they found. Say the base in the help text of every command that
+        // registers these so the difference is visible at the point of use.
+        READID_COL(READID_COL_ID,
+                   "--readid-col",
+                   "Read ID column. ZERO-based for grade*; ONE-based for apply-group.",
+                   "Read ID column index in the classification result.\n"
+                   "              Base differs by command: grade, gradeByCoverage, gradeGroup,\n"
+                   "              gradeGroupByCoverage and gradeStrain index the fields directly\n"
+                   "              (ZERO-based), while apply-group and binning2report subtract one\n"
+                   "              (ONE-based). Centrifuge's readID/seqID/taxID layout is therefore\n"
+                   "              --readid-col 0 for grade and --readid-col 1 for apply-group.",
+                   typeid(int),
+                   (void *) &readIdCol,
+                   "^[0-9]+$"),
+        TAXID_COL(TAXID_COL_ID,
+                  "--taxid-col",
+                  "Tax ID column. ZERO-based for grade*; ONE-based for apply-group.",
+                  "Tax ID column index in the classification result.\n"
+                  "              Base differs by command -- see --readid-col. Centrifuge needs\n"
+                  "              --taxid-col 2 for grade and --taxid-col 3 for apply-group.",
+                  typeid(int),
+                  (void *) &taxidCol,
+                  "^[0-9]+$"),
+        PRINT_COLUMNS(PRINT_COLUMNS_ID,
+                      "--print-columns",
+                      "CSV of columns to print",
+                      "CSV of columns to print",
+                      typeid(std::string),
+                      (void *) &printColumns,
+                      "^.*$"),
+        CLADE_RANK(CLADE_RANK_ID,
+                     "--clade-rank",
+                     "Rank of clade to be tested",
+                     "Rank of clade to be tested",
+                     typeid(std::string),
+                     (void *) &cladeRank,
+                     "^.*$"),
+        SKIP_SECONDARY(SKIP_SECONDARY_ID,
+                          "--skip-secondary",
+                          "Skip the results of already observed reads. (0: No, 1: Yes)",
+                          "Skip secondary classification",
+                          typeid(int),
+                          (void *) &skipSecondary,
+                          "[0-1]"),
+        PRINT_MODE(PRINT_MODE_ID,
+                        "--print-mode",
+                       "[1] Only filtered reads [2] Both filtered and removed reads",
+                       "[1] Only filtered reads [2] Both filtered and removed reads",
+                       typeid(int),
+                       (void *) &printMode,
+                       "[1-2]"),
+        CONTAM_LIST(CONTAM_LIST_ID, 
+                   "--contam-list",
+                   "List of contaminants to be filtered",
+                   "List of taxids to be filtered",
+                     typeid(std::string),
+                        (void *) &contamList,
+                        "^.*$"),
+        INFO_BEGIN(INFO_BEGIN_ID,
+                "--info-begin",
+                "Begin of the info to print",
+                "Begin of the info to print",
+                typeid(size_t),
+                (void *) &infoBegin,
+                "^[0-9]+$"), 
+        INFO_END(INFO_END_ID,
+                "--info-end",
+                "End of the info to print",
+                "End of the info to print",
+                typeid(size_t),
+                (void *) &infoEnd,
+                "^[0-9]+$"),
+        KMER_BEGIN(KMER_BEGIN_ID,
+                "--kmer-begin",
+                "First k-mer to print",
+                "First k-mer to print",
+                typeid(size_t),
+                (void *) &kmerBegin,
+                "^[0-9]+$"),
+        KMER_END(KMER_END_ID,
+                "--kmer-end",
+                "Last k-mer to print",
+                "Last k-mer to print",
+                typeid(size_t),
+                (void *) &kmerEnd,
+                "^[0-9]+$"),
+        REMOVE_UNCLASSIFIED(REMOVE_UNCLASSIFIED_ID,
+                "--remove-unclassified",
+                "Remove unclassified reads",
+                "Remove unclassified reads",
+                typeid(bool),
+                (void *) &removeUnclassified,
+                ""),
+        EXCLUDE_TAXID(EXCLUDE_TAXID_ID,
+                "--exclude-taxid",
+                "Exclude taxId as well as its children",
+                "Exclude taxId as well as its children",
+                typeid(std::string),
+                (void *) &excludeTaxid,
+                "^.*$"),
+        SELECT_TAXID(SELECT_TAXID_ID,
+                "--select-taxid",
+                "Select taxId as well as its children",
+                "Select taxId as well as its children",
+                typeid(std::string),
+                (void *) &selectTaxid,
+                "^.*$"),
+        SELECT_COLUMNS(SELECT_COLUMNS_ID,
+                "--select-columns",
+                "Columns to print (0-based csv)",
+                "Columns to print (0-based csv)",
+                typeid(std::string),
+                (void *) &selectColumns,
+                "^.*$"),
+        REPORT(REPORT_ID,
+                "--report",
+                "Make report of refined classification file",
+                "Make report of refined classification file",
+                typeid(bool),
+                (void *) &report,
+                ""),
+        RANK(RANK_ID,
+                "--rank",
+                "Adjust classification to the specified rank",
+                "Adjust classification to the specified rank",
+                typeid(std::string),
+                (void *) &rank,
+                "^.*$"),
+        HIGHER_RANK_FILE(HIGHER_RANK_FILE_ID,
+                "--rank-file-type",
+                "0: without higher rank, 1: with higher rank, 2: separate file for higher rank classification",
+                "0: without higher rank, 1: with higher rank, 2: separate file for higher rank classification",
+                typeid(int),
+                (void *) &higherRankFile,
+                "^[0-2]$"),
+        ASSACC2TAXID(ASSACC2TAXID_ID,
+                    "--assacc2taxid",
+                    "Path to the file mapping from accession to tax ID",
+                    "Path to the file mapping from accession to tax ID",
+                    typeid(std::string),
+                    (void *) &assacc2taxid,
+                    "^.*$"),
+        RANDOM_SEED(RANDOM_SEED_ID,
+                    "--random-seed",
+                    "Random seed for random number generation",
+                    "Random seed for random number generation",
+                    typeid(int),
+                    (void *) &randomSeed,
+                    "^[0-9]+$")
+  {
+    // Initialize the parameters
+    // Superkingdom taxonomy id
+    virusTaxId = 10239;
+    bacteriaTaxId = 2;
+    archaeaTaxId = 2157;
+
+
+    // Classify
+    seqMode = 2;
+    minScore = 0;
+    hammingMargin = 0;
+    minSpScore = 0;
+    ramUsage = 0;
+    printLog = 0;
+    matchPerKmer = 0;
+    minSSMatch = 0;
+    tieRatio = 0;
+
+    // Database creation
+    tinfoPath = "";
+    libraryPath = "";
+    taxonomyPath = "";
+    dbName = "";
+    dbDate = "";
+    splitNum = 0;
+    bufferSize = 0;
+    accessionLevel = 0;
+    packInfo = 1;
+
+    // Test parameters
+    testRank = "";
+    testType = "";
+    printColumns = "";
+    readIdCol = 0;
+    taxidCol = 0;
+    scoreCol = 0;
+    kraken2Format = false;
+    cladeRank = "";
+    skipSecondary = 0;
+
+    // Add to library
+    assembly = false;
+
+    // Filter
+    printMode = 0;
+    contamList = "";
+
+    // classified to full taxonomy
+    removeUnclassified = false;
+    excludeTaxid = "";
+    selectTaxid = "";
+    selectColumns = "";
+    report = false;
+    rank = "";
+    higherRankFile = 0;
+
+    // Group generation. Both thresholds are ratios so that one value transfers across datasets.
+    // --weak-band-ratio's 0.3333 comes from the species-inclusion benchmark (61.7 M reads,
+    // 49.6 k-mers per read -> core threshold 15, weak band (5, 15]); --min-overlap-ratio's 0.5
+    // comes from the 2026-09-03 rho sweep on CAMI2 strain-madness and species-exclusion, where
+    // purity saturates and 0.5 is the last point whose purity gain is worth its recall cost.
+    // See setGroupGenerationDefaults(), which carries that reasoning in full and overrides these
+    // for the grouping workflow -- both places have to agree.
+    maxKmerReads = 0;
+    maxKmerQuantile = 0.995f;
+    minOverlapRatio = 0.5f;
+    weakBandRatio = 0.3333f;
+    partitions = 16;
+    // 0 = clique. Spelled as a literal rather than EdgeMode: that enum lives in the read-group
+    // module, and LocalParameters must not depend on it.
+    edgeMode = 0;
+    commonKmerSpan = 0;
+    maxTmpDiskMiB = 0;
+    // fillQueryKmerBuffer branches on this and classify is the only workflow that assigns it,
+    // so without a default every other workflow reads it uninitialised.
+    pdmKmer = 0;
+
+    buildUnirefDb.push_back(&UNIREF_XML);
+    buildUnirefDb.push_back(&PARAM_THREADS);
+    buildUnirefDb.push_back(&TAXONOMY_PATH);
+    buildUnirefDb.push_back(&SPLIT_NUM);
+    buildUnirefDb.push_back(&DB_NAME);
+    buildUnirefDb.push_back(&DB_DATE);
+    buildUnirefDb.push_back(&RAM_USAGE);
+    buildUnirefDb.push_back(&VALIDATE_DB);
+
+    buildUnirefTree.push_back(&UNIREF_NUMBERS);
+    
+
+    // build
+    build.push_back(&PARAM_THREADS);
+    build.push_back(&TAXONOMY_PATH);
+    build.push_back(&SPLIT_NUM);
+    build.push_back(&PARAM_MASK_PROBABILTY);
+    build.push_back(&PARAM_MASK_RESIDUES);
+    build.push_back(&ACCESSION_LEVEL);
+    build.push_back(&DB_NAME);
+    build.push_back(&DB_DATE);
+    build.push_back(&CDS_INFO);
+    build.push_back(&RAM_USAGE);
+    build.push_back(&MAKE_LIBRARY);
+    build.push_back(&GTDB);
+    build.push_back(&VALIDATE_INPUT);
+    build.push_back(&VALIDATE_DB);
+    build.push_back(&SYNCMER);
+    build.push_back(&SMER_LEN);
+    build.push_back(&PARAM_CUSTOM_METAMER);
+    build.push_back(&SPACE_MASK);
+    build.push_back(&READING_FRAME);
+    build.push_back(&NO_MASK_TAXA);
+    build.push_back(&PACK_INFO);
+
+    createCommonKmerList.push_back(&PARAM_THREADS);
+    createCommonKmerList.push_back(&PARAM_MASK_PROBABILTY);
+    createCommonKmerList.push_back(&PARAM_MASK_RESIDUES);
+    createCommonKmerList.push_back(&RAM_USAGE);
+    createCommonKmerList.push_back(&SYNCMER);
+    createCommonKmerList.push_back(&SMER_LEN);
+    createCommonKmerList.push_back(&GTDB);
+    createCommonKmerList.push_back(&CDS_INFO);
+    createCommonKmerList.push_back(&KMER_FORMAT);
+
+
+    // updateDB
+    updateDB.push_back(&PARAM_THREADS);
+    updateDB.push_back(&SPLIT_NUM);
+    updateDB.push_back(&PARAM_MASK_PROBABILTY);
+    updateDB.push_back(&PARAM_MASK_RESIDUES);
+    updateDB.push_back(&ACCESSION_LEVEL);
+    updateDB.push_back(&DB_NAME);
+    updateDB.push_back(&DB_DATE);
+    updateDB.push_back(&CDS_INFO);
+    updateDB.push_back(&RAM_USAGE);
+    updateDB.push_back(&NEW_TAXA);
+    updateDB.push_back(&MAKE_LIBRARY);
+    updateDB.push_back(&GTDB);
+    updateDB.push_back(&VALIDATE_INPUT);
+    updateDB.push_back(&VALIDATE_DB);
+    // updateDB.push_back(&SYNCMER);
+    updateDB.push_back(&NO_MASK_TAXA);
+    updateDB.push_back(&PACK_INFO);
+
+    //classify
+    classify.push_back(&PARAM_THREADS);
+    classify.push_back(&SEQ_MODE);
+    classify.push_back(&PRECISION_MODE);
+    classify.push_back(&MAX_E_VALUE);
+    classify.push_back(&MIN_SCORE);
+    classify.push_back(&MIN_SP_SCORE);
+    classify.push_back(&MIN_AA_MATCH);
+    classify.push_back(&MIN_AA_MATCH_EUK);
+    classify.push_back(&TAXONOMY_PATH);
+    classify.push_back(&PARAM_MASK_RESIDUES);
+    classify.push_back(&PARAM_MASK_PROBABILTY);
+    classify.push_back(&RAM_USAGE);
+    classify.push_back(&MATCH_PER_KMER);
+    classify.push_back(&ACCESSION_LEVEL);
+    classify.push_back(&TIE_RATIO);
+    classify.push_back(&PRINT_LINEAGE);
+    classify.push_back(&VALIDATE_INPUT);
+    classify.push_back(&VALIDATE_DB);
+    classify.push_back(&SYNCMER);
+    classify.push_back(&SMER_LEN);
+    classify.push_back(&PARAM_SUB_MAT);
+    // classify.push_back(&KMER_FORMAT);
+    classify.push_back(&PRINT_LOG);
+    classify.push_back(&TIE_BRAKER);
+    // classify.push_back(&PDM_KMER);
+    // classify.push_back(&SCORE_MODE);
+    
+    classify.push_back(&DB_TOTAL_LENGTH);
+    classify.push_back(&MAX_SHIFT);
+    // classify.push_back(&EM);
+
+    assignUniref.push_back(&PARAM_THREADS);
+    assignUniref.push_back(&RAM_USAGE);
+    assignUniref.push_back(&MATCH_PER_KMER);
+    assignUniref.push_back(&VALIDATE_INPUT);
+
+
+    // extract
+    extract.push_back(&TAXONOMY_PATH);
+    extract.push_back(&SEQ_MODE);
+    extract.push_back(&TARGET_TAX_ID);
+    extract.push_back(&EXTRACT_MODE);
+    extract.push_back(&PARAM_OUTDIR);
+
+    //groupGeneration
+    groupGeneration.push_back(&PARAM_THREADS);
+    groupGeneration.push_back(&SEQ_MODE);
+    groupGeneration.push_back(&RAM_USAGE);
+    groupGeneration.push_back(&MATCH_PER_KMER);
+    groupGeneration.push_back(&SYNCMER);
+    groupGeneration.push_back(&SMER_LEN);
+    groupGeneration.push_back(&MAX_KMER_READS);
+    groupGeneration.push_back(&MAX_KMER_QUANTILE);
+    groupGeneration.push_back(&MIN_OVERLAP_RATIO);
+    groupGeneration.push_back(&WEAK_BAND_RATIO);
+    groupGeneration.push_back(&PARTITIONS);
+    groupGeneration.push_back(&COMMON_KMER_SPAN);
+    groupGeneration.push_back(&MAX_TMP_DISK);
+    groupGeneration.push_back(&PRINT_LOG);
+
+    // easy-grouping takes exactly grouping's parameters. The edge mode is not among them: the
+    // command is what selects it, and a flag as well would make `grouping --edge-mode 1` and
+    // `easy-grouping` two names for one run with two families of result tags.
+    easyGroupGeneration = groupGeneration;
+
+    //groupApplication
+    groupApplication.push_back(&SEQ_MODE);
+    groupApplication.push_back(&RAM_USAGE);
+    groupApplication.push_back(&PARAM_THREADS);
+    groupApplication.push_back(&MIN_VOTE_SCORE);
+    groupApplication.push_back(&SCORE_COL);
+    groupApplication.push_back(&READID_COL);
+    groupApplication.push_back(&TAXID_COL);
+    groupApplication.push_back(&WEIGHT_MODE);
+    groupApplication.push_back(&KRAKEN2_FORMAT);
+
+    groupGeneration.push_back(&PARAM_MASK_RESIDUES);
+    groupGeneration.push_back(&PARAM_MASK_PROBABILTY);
+    groupGeneration.push_back(&VALIDATE_INPUT);
+    groupGeneration.push_back(&SYNCMER);
+    groupGeneration.push_back(&SMER_LEN);
+    groupGeneration.push_back(&MIN_EDGE_WEIGHT);
+    groupGeneration.push_back(&NEIGHBOR_KMERS);
+    groupGeneration.push_back(&PRINT_LOG);
+    groupGeneration.push_back(&PARAM_MAJORITY);
+    groupGeneration.push_back(&MIN_VOTE_SCORE);
+    groupGeneration.push_back(&SCORE_COL);
+    groupGeneration.push_back(&WEIGHT_MODE);
+ 
+
+    // filter 
+    filter.push_back(&PARAM_THREADS);
+    filter.push_back(&SEQ_MODE);
+    filter.push_back(&VIRUS_TAX_ID);
+    filter.push_back(&MIN_SCORE);
+    filter.push_back(&HAMMING_MARGIN);
+    filter.push_back(&MIN_SP_SCORE);
+    filter.push_back(&PARAM_V);
+    filter.push_back(&RAM_USAGE);
+    filter.push_back(&PRINT_LOG);
+    filter.push_back(&TAXONOMY_PATH);
+    filter.push_back(&PARAM_MASK_RESIDUES);
+    filter.push_back(&PARAM_MASK_PROBABILTY);
+    filter.push_back(&MATCH_PER_KMER);
+    filter.push_back(&PRINT_MODE);
+    filter.push_back(&CONTAM_LIST);
+    filter.push_back(&ACCESSION_LEVEL);
+    
+    //updateTargetDB
+    exclusiontest_hiv.push_back(&TEST_RANK);
+
+    // grade
+    grade.push_back(&TEST_RANK);
+    grade.push_back(&TEST_TYPE);
+    grade.push_back(&PARAM_THREADS);
+    grade.push_back(&READID_COL);
+    grade.push_back(&TAXID_COL);
+    grade.push_back(&PARAM_V);
+    grade.push_back(&SCORE_COL);
+    grade.push_back(&PRINT_COLUMNS);
+    grade.push_back(&CLADE_RANK);
+    grade.push_back(&SKIP_SECONDARY);
+
+    // Apply thresholds
+    applyThreshold.push_back(&MIN_SP_SCORE);
+    applyThreshold.push_back(&MIN_SCORE);
+
+    // Binning to report
+    binning2report.push_back(&READID_COL);
+    binning2report.push_back(&TAXID_COL);
+
+    // add to library
+    addToLibrary.push_back(&IS_ASSEMBLY);
+    addToLibrary.push_back(&TAXONOMY_PATH);
+    addToLibrary.push_back(&LIBRARY_PATH);
+
+    // db report
+    databaseReport.push_back(&TAXONOMY_PATH);
+
+    // printInfo
+    printInfo.push_back(&INFO_BEGIN);
+    printInfo.push_back(&INFO_END);
+    printInfo.push_back(&PARAM_THREADS);
+
+    // expand_diffidx
+    expand_diffidx.push_back(&KMER_BEGIN);
+    expand_diffidx.push_back(&KMER_END);
+    expand_diffidx.push_back(&PARAM_THREADS);
+
+    query2reference.push_back(&TEST_RANK);
+
+    classifiedRefiner.push_back(&REMOVE_UNCLASSIFIED);
+    classifiedRefiner.push_back(&EXCLUDE_TAXID);
+    classifiedRefiner.push_back(&SELECT_TAXID);
+    classifiedRefiner.push_back(&SELECT_COLUMNS);
+    classifiedRefiner.push_back(&REPORT);
+    classifiedRefiner.push_back(&RANK);
+    classifiedRefiner.push_back(&HIGHER_RANK_FILE);
+    classifiedRefiner.push_back(&PARAM_THREADS);
+    classifiedRefiner.push_back(&MIN_SCORE);
+    classifiedRefiner.push_back(&MAX_E_VALUE);
+    classifiedRefiner.push_back(&PRINT_LINEAGE);
+    classifiedRefiner.push_back(&TAXONOMY_PATH);
+
+    makeBenchmarkSet.push_back(&RANDOM_SEED);
+    makeBenchmarkSet.push_back(&ASSACC2TAXID);
+    makeBenchmarkSet.push_back(&TEST_TYPE);
+
+    mergeAssemblyFiles.push_back(&DB_NAME);
+
+    createTaxDb.push_back(&GTDB);
+}
+
+void LocalParameters::printParameters(const std::string &module, int argc, const char* pargv[],
+                                 const std::vector<MMseqsParameter*> &par){
+    if (Debug::debugLevel < Debug::INFO) {
+        return;
+    }
+
+    Debug(Debug::INFO) << module << " ";
+    for (int i = 0; i < argc; i++) {
+        // don't expose users to the interal b64 masking of whitespace characters
+        if (strncmp("b64:", pargv[i], 4) == 0) {
+            Debug(Debug::INFO) << "'" << base64_decode(pargv[i] + 4, strlen(pargv[i]) - 4) << "' ";
+        } else {
+            Debug(Debug::INFO) << pargv[i] << " ";
+        }
+    }
+    Debug(Debug::INFO) << "\n\n";
+
+    if (CommandCaller::getCallDepth() > 0) {
+        return;
+    }
+
+    size_t maxWidth = 0;
+    for(size_t i = 0; i < par.size(); i++) {
+        maxWidth = std::max(strlen(par[i]->display), maxWidth);
+    }
+
+    std::stringstream ss;
+    ss << std::boolalpha;
+
+    ss << std::setw(maxWidth) << std::left  << "Metabuli Version (commit):" << "\t" << version << "\n";
+
+    for (size_t i = 0; i < par.size(); i++) {
+        if (par[i]->category & MMseqsParameter::COMMAND_HIDDEN) {
+            continue;
+        }
+        ss << std::setw(maxWidth) << std::left << par[i]->display << "\t";
+        if (typeid(int) == par[i]->type ) {
+            ss << *((int *)par[i]->value);
+        } else if(typeid(size_t) == par[i]->type ){
+            ss << *((size_t *)par[i]->value);
+        } else if(typeid(ByteParser) == par[i]->type) {
+            ss << ByteParser::format(*((size_t *)par[i]->value), 'a', 'h');
+        } else if(PARAM_SUB_MAT.uniqid == par[i]->uniqid || PARAM_SEED_SUB_MAT.uniqid == par[i]->uniqid) {
+            MultiParam<NuclAA<std::string>>* param = ((MultiParam<NuclAA<std::string>>*) par[i]->value);
+            MultiParam<NuclAA<std::string>> tmpPar(NuclAA<std::string>(
+                BaseMatrix::unserializeName(param->values.aminoacid().c_str()),
+                BaseMatrix::unserializeName(param->values.nucleotide().c_str())
+            ));
+            ss << MultiParam<NuclAA<std::string>>::format(tmpPar);
+        } else if(typeid(MultiParam<NuclAA<std::string>>) == par[i]->type) {
+            ss << MultiParam<NuclAA<std::string>>::format(*((MultiParam<NuclAA<std::string>> *)par[i]->value));
+        } else if(typeid(MultiParam<NuclAA<int>>) == par[i]->type) {
+            ss << MultiParam<NuclAA<int>>::format(*((MultiParam<NuclAA<int>> *)par[i]->value));
+        } else if(typeid(MultiParam<NuclAA<float>>) == par[i]->type) {
+            ss << MultiParam<NuclAA<float>>::format(*((MultiParam<NuclAA<float>> *)par[i]->value));
+        } else if(typeid(MultiParam<SeqProf<int>>) == par[i]->type) {
+            ss << MultiParam<SeqProf<int>>::format(*((MultiParam<SeqProf<int>> *)par[i]->value));
+        } else if(typeid(MultiParam<PseudoCounts>) == par[i]->type) {
+            ss << MultiParam<PseudoCounts>::format(*((MultiParam<PseudoCounts> *)par[i]->value));
+        } else if(typeid(float) == par[i]->type) {
+            ss << *((float *)par[i]->value);
+        } else if(typeid(double) == par[i]->type) {
+            ss << *((double *)par[i]->value);
+        } else if(typeid(std::string) == par[i]->type) {
+            ss << *((std::string *) par[i]->value);
+        } else if (typeid(bool) == par[i]->type) {
+            ss << *((bool *)par[i]->value);
+        }
+        ss << "\n";
+    }
+
+    Debug(Debug::INFO) << ss.str() << "\n";
+}
+
+void LocalParameters::parseParameters(int argc, const char *pargv[], const Command &command, bool printPar, int parseFlags,
+                                 int outputFlags) {
+    filenames.clear();
+    std::vector<MMseqsParameter*> & par = *command.params;
+
+    bool canHandleHelp = false;
+    for (size_t parIdx = 0; parIdx < par.size(); parIdx++) {
+        if (par[parIdx]->uniqid == PARAM_HELP_ID || par[parIdx]->uniqid == PARAM_HELP_LONG_ID) {
+            canHandleHelp = true;
+        }
+    }
+
+    size_t parametersFound = 0;
+    for (int argIdx = 0; argIdx < argc; argIdx++) {
+        // it is a parameter if it starts with - or --
+        const bool longParameter = (pargv[argIdx][0] == '-' && pargv[argIdx][1] == '-');
+        if (longParameter || (pargv[argIdx][0] == '-')) {
+            if ((parseFlags & PARSE_REST) && longParameter && pargv[argIdx][2] == '\0') {
+                restArgv = pargv + argIdx + 1;
+                restArgc = argc - (argIdx + 1);
+                break;
+            }
+            std::string parameter(pargv[argIdx]);
+            if (canHandleHelp == false && (parameter.compare("-h") == 0 || parameter.compare("--help") == 0)) {
+                printUsageMessage(command, 0xFFFFFFFF);
+                EXIT(EXIT_SUCCESS);
+            }
+
+            bool hasUnrecognizedParameter = true;
+            for (size_t parIdx = 0; parIdx < par.size(); parIdx++) {
+                if(parameter.compare(par[parIdx]->name) == 0) {
+                    if (typeid(bool) != par[parIdx]->type && argIdx + 1 == argc) {
+                        printUsageMessage(command, outputFlags);
+                        Debug(Debug::ERROR) << "Missing argument " << par[parIdx]->name << "\n";
+                        EXIT(EXIT_FAILURE);
+                    }
+
+                    if (par[parIdx]->wasSet) {
+                        printUsageMessage(command, outputFlags);
+                        Debug(Debug::ERROR) << "Duplicate parameter " << par[parIdx]->name << "\n";
+                        EXIT(EXIT_FAILURE);
+                    }
+
+                    if (typeid(int) == par[parIdx]->type) {
+                        regex_t regex;
+                        compileRegex(&regex, par[parIdx]->regex);
+                        int nomatch = regexec(&regex, pargv[argIdx+1], 0, NULL, 0);
+                        regfree(&regex);
+                        // if no match found or two matches found (we want exactly one match)
+                        if (nomatch){
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in argument " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        }else{
+                            *((int *) par[parIdx]->value) = atoi(pargv[argIdx+1]);
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    } else if (typeid(size_t) == par[parIdx]->type) {
+                        regex_t regex;
+                        compileRegex(&regex, par[parIdx]->regex);
+                        int nomatch = regexec(&regex, pargv[argIdx+1], 0, NULL, 0);
+                        regfree(&regex);
+                        // if no match found or two matches found (we want exactly one match)
+                        if (nomatch){
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in argument " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        }else{
+                            *((size_t *) par[parIdx]->value) = strtoull(pargv[argIdx+1], nullptr, 10); //atoi(pargv[argIdx+1]);
+                            // std::cout << "Value: " << *((size_t *) par[parIdx]->value) << std::endl;
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    } else if (typeid(ByteParser) == par[parIdx]->type) {
+                        regex_t regex;
+                        compileRegex(&regex, par[parIdx]->regex);
+                        int nomatch = regexec(&regex, pargv[argIdx+1], 0, NULL, 0);
+                        regfree(&regex);
+
+                        // if no match found or two matches found (we want exactly one match)
+                        if (nomatch){
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in argument regex " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        } else {
+                            size_t value = ByteParser::parse(pargv[argIdx+1]);
+                            if (value == ByteParser::INVALID_SIZE) {
+                                printUsageMessage(command, 0xFFFFFFFF);
+                                Debug(Debug::ERROR) << "Error in value parsing " << par[parIdx]->name << "\n";
+                                EXIT(EXIT_FAILURE);
+                            } else {
+                                *((size_t *) par[parIdx]->value) = value;
+                                par[parIdx]->wasSet = true;
+                            }
+                        }
+                        argIdx++;
+                    } else if (typeid(MultiParam<NuclAA<std::string>>) == par[parIdx]->type) {
+                        std::string val(pargv[argIdx+1]);
+                        if (Util::startWith("b64:", val)) {
+                            val = base64_decode(val.c_str() + 4, val.size() - 4);
+                        }
+                        NuclAA<std::string> value = MultiParam<NuclAA<std::string>>(val.c_str()).values;
+                        if (value.first == "INVALID" || value.second == "INVALID") {
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in value parsing " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        } else {
+                            *((MultiParam<NuclAA<std::string>> *) par[parIdx]->value) = value;
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    }else if (typeid(MultiParam<NuclAA<int>>) == par[parIdx]->type) {
+                        NuclAA<int> value = MultiParam<NuclAA<int>>(pargv[argIdx+1]).values;
+                        if (value.first == INT_MAX || value.second == INT_MAX) {
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in value parsing " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        } else {
+                            *((MultiParam<NuclAA<int>> *) par[parIdx]->value) = value;
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    }else if (typeid(MultiParam<NuclAA<float>>) == par[parIdx]->type) {
+                        NuclAA<float> value = MultiParam<NuclAA<float>>(pargv[argIdx + 1]).values;
+                        if (value.first == FLT_MAX || value.second == FLT_MAX) {
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in value parsing " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        } else {
+                            *((MultiParam<NuclAA<float>> *) par[parIdx]->value) = value;
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    }else if (typeid(MultiParam<SeqProf<int>>) == par[parIdx]->type) {
+                        SeqProf<int> value = MultiParam<SeqProf<int>>(pargv[argIdx+1]).values;
+                        *((MultiParam<SeqProf<int>> *) par[parIdx]->value) = value;
+                        par[parIdx]->wasSet = true;
+                        argIdx++;
+                    }else if (typeid(MultiParam<PseudoCounts>) == par[parIdx]->type) {
+                        PseudoCounts value = MultiParam<PseudoCounts>(pargv[argIdx + 1]).values;
+                        if (value.first == FLT_MAX || value.second == FLT_MAX) {
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in value parsing " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        } else {
+                            *((MultiParam<PseudoCounts> *) par[parIdx]->value) = value;
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    }else if (typeid(float) == par[parIdx]->type) {
+                        regex_t regex;
+                        compileRegex(&regex, par[parIdx]->regex);
+                        int nomatch = regexec(&regex, pargv[argIdx+1], 0, NULL, 0);
+                        regfree(&regex);
+                        if (nomatch){
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in argument " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        }else{
+                            double input = strtod(pargv[argIdx+1], NULL);
+                            *((float *) par[parIdx]->value) = static_cast<float>(input);
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    } else if (typeid(double) == par[parIdx]->type) {
+                        regex_t regex;
+                        compileRegex(&regex, par[parIdx]->regex);
+                        int nomatch = regexec(&regex, pargv[argIdx+1], 0, NULL, 0);
+                        regfree(&regex);
+                        if (nomatch){
+                            printUsageMessage(command, 0xFFFFFFFF);
+                            Debug(Debug::ERROR) << "Error in argument " << par[parIdx]->name << "\n";
+                            EXIT(EXIT_FAILURE);
+                        }else{
+                            *((double *) par[parIdx]->value) = strtod(pargv[argIdx+1], NULL);
+                            par[parIdx]->wasSet = true;
+                        }
+                        argIdx++;
+                    } else if (typeid(std::string) == par[parIdx]->type) {
+                        std::string val(pargv[argIdx+1]);
+                        if (Util::startWith("b64:", val)) {
+                            val = base64_decode(val.c_str() + 4, val.size() - 4);
+                        }
+                        std::string* currVal = (std::string*)par[parIdx]->value;
+                        currVal->assign(val);
+                        par[parIdx]->wasSet = true;
+                        argIdx++;
+                    } else if (typeid(bool) == par[parIdx]->type) {
+                        bool *value = (bool *) par[parIdx]->value;
+                        if (argIdx + 1 == argc || pargv[argIdx+1][0] == '-') {
+                            *value = !*value;
+                        } else {
+                            *value = parseBool(pargv[argIdx+1]);
+                            argIdx++;
+                        }
+                        par[parIdx]->wasSet = true;
+                    } else {
+                        Debug(Debug::ERROR) << "Wrong parameter type in parseParameters. Please inform the developers\n";
+                        EXIT(EXIT_FAILURE);
+                    }
+
+                    hasUnrecognizedParameter = false;
+                    continue;
+                }
+            }
+
+            if (hasUnrecognizedParameter) {
+                printUsageMessage(command, 0xFFFFFFFF);
+
+                // Suggest some parameter that the user might have meant
+                std::vector<MMseqsParameter *>::const_iterator index = par.end();
+                int maxDistance = 0;
+                for (std::vector<MMseqsParameter *>::const_iterator it = par.begin(); it != par.end(); ++it) {
+                    int distance = DistanceCalculator::localLevenshteinDistance(parameter, (*it)->name);
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                        index = it;
+                    }
+                }
+
+                Debug(Debug::ERROR) << "Unrecognized parameter \"" << parameter << "\"";
+                if (index != par.end()) {
+                    Debug(Debug::ERROR) << ". Did you mean \"" << (*index)->name << "\" (" << (*index)->display << ")?\n";
+                } else {
+                    Debug(Debug::ERROR) << "\n";
+                }
+
+                EXIT(EXIT_FAILURE);
+            }
+
+            parametersFound++;
+        } else {
+            // parameter is actually a filename
+#ifdef __CYGWIN__
+            // normalize windows paths to cygwin unix paths
+            const char *path = pargv[argIdx];
+            ssize_t size = cygwin_conv_path(CCP_WIN_A_TO_POSIX | CCP_RELATIVE, path, NULL, 0);
+            if (size < 0) {
+                Debug(Debug::ERROR) << "Could not convert cygwin path!\n";
+                EXIT(EXIT_FAILURE);
+            } else {
+                char *posix = new char[size];
+                if (cygwin_conv_path(CCP_WIN_A_TO_POSIX | CCP_RELATIVE, path, posix, size)) {
+                    Debug(Debug::ERROR) << "Could not convert cygwin path!\n";
+                    EXIT(EXIT_FAILURE);
+                }
+                filenames.emplace_back(posix);
+                delete posix;
+            }
+#else
+            filenames.emplace_back(pargv[argIdx]);
+#endif
+        }
+    }
+
+    if (MMseqsMPI::isMaster()) {
+        Debug::setDebugLevel(verbosity);
+    }
+
+#ifdef OPENMP
+    omp_set_num_threads(threads);
+#endif
+#ifndef OPENMP
+    threads = 1;
+#endif
+
+
+    bool ignorePathCountChecks = command.databases.empty() == false && command.databases[0].specialType & DbType::ZERO_OR_ALL && filenames.size() == 0;
+    const size_t MAX_DB_PARAMETER = 6;
+    if (ignorePathCountChecks == false && command.databases.size() > MAX_DB_PARAMETER) {
+        Debug(Debug::ERROR) << "Use argv if you need more than " << MAX_DB_PARAMETER << " db parameters" << "\n";
+        EXIT(EXIT_FAILURE);
+    }
+
+    if (ignorePathCountChecks == false && filenames.size() < command.databases.size()){
+        printUsageMessage(command, outputFlags);
+        Debug(Debug::ERROR) << "Not enough input paths provided. ";
+        if (command.databases.size() == 1) {
+            Debug(Debug::ERROR) << "1 path is required.\n";
+        } else {
+            Debug(Debug::ERROR) << command.databases.size() << " paths are required.\n";
+        }
+        EXIT(EXIT_FAILURE);
+    }
+
+    bool isVar = false;
+    bool isStartVar = false;
+    bool isMiddleVar = false;
+    bool isEndVar = false;
+    if(command.databases.empty() == false && command.databases[0].validator != NULL) {
+        if (command.databases.size() >= 2) {
+            for(size_t i = 0; i < command.databases.size();i++){
+                if(i == 0){
+                    isStartVar |= (command.databases[i].specialType & DbType::VARIADIC);
+                } else if(i == command.databases.size() - 1){
+                    isEndVar |= (command.databases[i].specialType & DbType::VARIADIC);
+                } else {
+                    isMiddleVar |= (command.databases[i].specialType & DbType::VARIADIC);
+                }
+
+            }
+            isVar = isStartVar | isMiddleVar | isEndVar;
+        }
+        if (ignorePathCountChecks == false && isVar == false && filenames.size() > command.databases.size()) {
+            printUsageMessage(command, outputFlags);
+            Debug(Debug::ERROR) << "Too many input paths provided. Only " << SSTR(command.databases.size()) << " are allowed\n";
+            EXIT(EXIT_FAILURE);
+        }
+    }
+    switch (std::min(filenames.size(), MAX_DB_PARAMETER)) {
+        case 6:
+            db6 = filenames[5];
+            db6Index = db6;
+            db6Index.append(".index");
+            db6dbtype = db6;
+            db6dbtype.append(".dbtype");
+            hdr6 = db6;
+            hdr6.append("_h");
+            hdr6Index = hdr6;
+            hdr6Index.append(".index");
+            hdr6dbtype = hdr6;
+            hdr6dbtype.append(".dbtype");
+            // FALLTHROUGH
+        case 5:
+            db5 = filenames[4];
+            db5Index = db5;
+            db5Index.append(".index");
+            db5dbtype = db5;
+            db5dbtype.append(".dbtype");
+            hdr5 = db5;
+            hdr5.append("_h");
+            hdr5Index = hdr5;
+            hdr5Index.append(".index");
+            hdr5dbtype = hdr5;
+            hdr5dbtype.append(".dbtype");
+            // FALLTHROUGH
+        case 4:
+            db4 = filenames[3];
+            db4Index = db4;
+            db4Index.append(".index");
+            db4dbtype = db4;
+            db4dbtype.append(".dbtype");
+            hdr4 = db4;
+            hdr4.append("_h");
+            hdr4Index = hdr4;
+            hdr4Index.append(".index");
+            hdr4dbtype = hdr4;
+            hdr4dbtype.append(".dbtype");
+            // FALLTHROUGH
+        case 3:
+            db3 = filenames[2];
+            db3Index = db3;
+            db3Index.append(".index");
+            db3dbtype = db3;
+            db3dbtype.append(".dbtype");
+            hdr3 = db3;
+            hdr3.append("_h");
+            hdr3Index = hdr3;
+            hdr3Index.append(".index");
+            hdr3dbtype = hdr3;
+            hdr3dbtype.append(".dbtype");
+            // FALLTHROUGH
+        case 2:
+            db2 = filenames[1];
+            db2Index = db2;
+            db2Index.append(".index");
+            db2dbtype = db2;
+            db2dbtype.append(".dbtype");
+            hdr2 = db2;
+            hdr2.append("_h");
+            hdr2Index = hdr2;
+            hdr2Index.append(".index");
+            hdr2dbtype = hdr2;
+            hdr2dbtype.append(".dbtype");
+            // FALLTHROUGH
+        case 1:
+            db1 = filenames[0];
+            db1Index = db1;
+            db1Index.append(".index");
+            db1dbtype = db1;
+            db1dbtype.append(".dbtype");
+            hdr1 = db1;
+            hdr1.append("_h");
+            hdr1Index = hdr1;
+            hdr1Index.append(".index");
+            hdr1dbtype = hdr1;
+            hdr1dbtype.append(".dbtype");
+            break;
+        default:
+            // Do not abort execution if we expect a variable amount of parameters
+            if (parseFlags & PARSE_VARIADIC)
+                break;
+            // FALLTHROUGH
+        case 0:
+            if (parseFlags & PARSE_ALLOW_EMPTY)
+                break;
+            printUsageMessage(command, outputFlags);
+            printParameters(command.cmd, argc, pargv, par);
+            Debug(Debug::ERROR) << "Unrecognized parameters!" << "\n";
+            EXIT(EXIT_FAILURE);
+    }
+
+    initMatrices();
+
+    if (ignorePathCountChecks == false) {
+        checkIfDatabaseIsValid(command, argc, pargv, isStartVar, isMiddleVar, isEndVar);
+    }
+
+    if (printPar == true) {
+        printParameters(command.cmd, argc, pargv, par);
+    }
+}

@@ -1,0 +1,108 @@
+#include "Command.h"
+#include "LocalCommandDeclarations.h"
+#include "LocalParameters.h"
+#include "DownloadDatabase.h"
+#include "Prefiltering.h"
+
+LocalParameters& localPar = LocalParameters::getLocalInstance();
+
+// Entries copied verbatim from Metabuli 64680ee4 src/MetabuliBase.cpp so that every command
+// keeps the usage string, parameter list and validator flags it has there. The source line
+// range is noted above each one.
+std::vector<Command> metamoumCommands = {
+        // MetabuliBase.cpp:343-351
+        {"grouping", groupGeneration, &localPar.groupGeneration, COMMAND_MAIN,
+                "Generate read groups based on k-mer sharing between reads",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:query file(s)> <i:common k-mer database> <o: output directory>",
+                CITATION_SPACEPHARER,
+                {{"FASTA/Q", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::flatfile},
+                 {"common k-mer database", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
+                 {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
+        // MetabuliBase.cpp:352-360
+        {"easy-grouping", easyGroupGeneration, &localPar.easyGroupGeneration, COMMAND_MAIN,
+                "Generate read groups, faster and lighter, at lower graph precision",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:query file(s)> <i:common k-mer database> <o: output directory>",
+                CITATION_SPACEPHARER,
+                {{"FASTA/Q", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::flatfile},
+                 {"common k-mer database", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
+                 {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
+        // MetabuliBase.cpp:361-371
+        {"apply-group", groupApplication, &localPar.groupApplication, COMMAND_MAIN,
+                "Assigning group representative taxonomy label to unclassified query reads",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:group result file> <i:group mapping result file> <i: taxonomy directory> <i: read-by-read result> <o: output directory>",
+                CITATION_SPACEPHARER,
+                {{"group result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::flatfile},
+                 {"group mapping result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"taxonomy directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
+                 {"read-by-read result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
+        // MetabuliBase.cpp:48-57
+        {"create-common-kmer-list", create_common_kmer_list, &localPar.createCommonKmerList, COMMAND_EXPERT,
+                "Create a list of k-mers that appear in multiple species",
+                nullptr,
+                "Jaebeom Kim <jbeom0731@gmail.com>",
+                "<database directory> <FASTA list> <accesssion2taxid> <taxonomy directory>",
+                CITATION_SPACEPHARER,
+                {{"Directory where the DB will be generated", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::empty},
+                 {"A list of FASTA files", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"Mapping file (accession to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"Directory where the taxonomy DB is stored", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory}}},
+        // MetabuliBase.cpp:372-378
+        {"count-common-kmers", count_common_kmers, &localPar.expand_diffidx, COMMAND_EXPERT,
+                "Count k-mers common at each taxonomy level",
+                nullptr,
+                "Jaebeom Kim <jbeom0731@gmail.com>",
+                "<i: database directory>",
+                CITATION_SPACEPHARER,
+                {{"database directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory}}},
+        // MetabuliBase.cpp:149-159
+        {"gradeGroup", gradeGroup, &localPar.grade, COMMAND_EXPERT,
+                "Grade the grouping result (only for benchmarking)",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:Group file list> <i:Read group file list> <i:Answer sheet list> <i:Query name file list> <i:Taxonomy Dir>",
+                CITATION_SPACEPHARER,
+                {{"Grouping result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                {"Read-group result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                {"Mapping file (Query ID to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                {"Query name file", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                {"taxonomy dir", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::directory}}},
+        // MetabuliBase.cpp:170-181
+        {"gradeGroupByCoverage", gradeGroupByCoverage, &localPar.grade, COMMAND_EXPERT,
+                "Grade grouping results per coverage level (only for benchmarking)",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:Group file list> <i:Read-group file list> <i:Answer sheet list> <i:Query name file list> <i:Query fasta file list> <i:Taxonomy Dir>",
+                CITATION_SPACEPHARER,
+                {{"Grouping result file list", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"Read-group result file list", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of answer sheets (accession to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of query name files (combined fasta or header list)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of individual query fasta file paths (filename encodes coverage)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"Taxonomy directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::directory}}},
+        // MetabuliBase.cpp:182-192
+        {"gradeStrain", gradeStrain, &localPar.grade, COMMAND_EXPERT,
+                "Grade grouping results at strain level, against genome_id (only for benchmarking)",
+                nullptr,
+                "Luna Sung-eun Jang <jse9512@gmail.com>",
+                "<i:Group file list> <i:Read-group file list> <i:Strain answer list> <i:Tax answer list> <i:Query name file list>",
+                CITATION_SPACEPHARER,
+                {{"Grouping result file list", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"Read-group result file list", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of strain answer sheets (read name to genome_id)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of answer sheets (read name to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
+                 {"List of query name files (combined fasta or header list)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile}}},
+};
+
+// Both are declared extern by the mmseqs framework -- externalThreshold in
+// prefiltering/Prefiltering.h, externalDownloads in workflow/Databases.cpp -- so they have to be
+// defined even though Metamoum ships no prefilter thresholds and no download script.
+std::vector<KmerThreshold> externalThreshold = {};
+
+std::vector<DatabaseDownload> externalDownloads = {};

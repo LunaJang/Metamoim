@@ -1,0 +1,73 @@
+#ifndef METABULI_LOCALUTIL_H
+#define METABULI_LOCALUTIL_H
+
+#include "Util.h"
+#include <string>
+#include "common.h"
+#include "KSeqWrapper.h"
+#include <cstdint>
+
+class LocalUtil : public Util {
+public:
+    LocalUtil() = default;
+
+    static std::string getQueryBaseName(const std::string & queryPath);
+
+    static bool isFasta(const std::string & queryPath) {
+        // Allow .fna, .fasta, .fna.gz, .fasta.gz, .fa, .fa.gz
+        return Util::endsWith(".fna", queryPath) || Util::endsWith(".fasta", queryPath) ||
+               Util::endsWith(".fna.gz", queryPath) || Util::endsWith(".fasta.gz", queryPath) ||
+               Util::endsWith(".fa", queryPath) || Util::endsWith(".fa.gz", queryPath);
+    }
+
+    static bool isFastq(const std::string & queryPath) {
+        // Allow .fq, .fastq, .fq.gz, .fastq.gz
+        return Util::endsWith(".fq", queryPath) || Util::endsWith(".fastq", queryPath) ||
+               Util::endsWith(".fq.gz", queryPath) || Util::endsWith(".fastq.gz", queryPath); 
+    }
+
+    static bool isValidQueryFile(const std::string & queryPath) {
+        return isFasta(queryPath) || isFastq(queryPath);
+    }
+
+    template<typename T>
+    static T getQueryKmerNumber(T queryLength, int kLength, bool trimming);
+
+    template<typename T>
+    static T getMaxCoveredLength(T queryLength);
+
+    static int getFirstWhiteSpacePos(const std::string & str);
+
+    // static std::string getAccessionFromHeader(const std::string & header);
+};
+
+
+template <typename T>
+T LocalUtil::getQueryKmerNumber(T queryLength, int k, bool trimming) {
+    if (trimming) {
+        T coveredAALen = getMaxCoveredLength(queryLength) / 3;
+        if (coveredAALen < k) {
+            return 0;
+        }
+        return (coveredAALen - k + 1) * 6;
+    }
+
+    T dnaWindow = 3 * k;
+    if (queryLength < dnaWindow) {
+        return 0;
+    }
+    return 2 * (queryLength - (3 * k) + 1);
+}
+
+template<typename T>
+T LocalUtil::getMaxCoveredLength(T queryLength) {
+    if (queryLength % 3 == 2) {
+        return queryLength - 2; 
+    } else if (queryLength % 3 == 1) {
+        return queryLength - 4; 
+    } else {
+        return queryLength - 3; 
+    }
+}
+
+#endif //METABULI_LOCALUTIL_H
