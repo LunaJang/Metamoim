@@ -176,7 +176,7 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
         }
     }
     inFile.close();
-    cout << "Original Metabuli result loaded from " << orgRes << " successfully." << endl;
+    cout << "Original classification result loaded from " << orgRes << " successfully." << endl;
     cout << "Number of query result: " << orgResults.size() << endl;
 }
 

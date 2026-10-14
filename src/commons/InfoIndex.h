@@ -1,5 +1,5 @@
-#ifndef METABULI_INFOINDEX_H
-#define METABULI_INFOINDEX_H
+#ifndef METAMOUM_INFOINDEX_H
+#define METAMOUM_INFOINDEX_H
 
 #include <algorithm>
 #include <cstdint>
@@ -388,4 +388,4 @@ inline void packInfoFileInPlace(const std::string &infoFileName,
     }
 }
 
-#endif // METABULI_INFOINDEX_H
+#endif // METAMOUM_INFOINDEX_H

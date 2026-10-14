@@ -1,5 +1,5 @@
-#ifndef METABULI_KMERSCANNER_H
-#define METABULI_KMERSCANNER_H
+#ifndef METAMOUM_KMERSCANNER_H
+#define METAMOUM_KMERSCANNER_H
 
 #include <iostream>
 #include <deque>
@@ -390,4 +390,4 @@ public:
 };
 
 
-#endif // METABULI_KMERSCANNER_H
+#endif // METAMOUM_KMERSCANNER_H

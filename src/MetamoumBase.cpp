@@ -6,11 +6,7 @@
 
 LocalParameters& localPar = LocalParameters::getLocalInstance();
 
-// Entries copied verbatim from Metabuli 64680ee4 src/MetabuliBase.cpp so that every command
-// keeps the usage string, parameter list and validator flags it has there. The source line
-// range is noted above each one.
 std::vector<Command> metamoumCommands = {
-        // MetabuliBase.cpp:343-351
         {"grouping", groupGeneration, &localPar.groupGeneration, COMMAND_MAIN,
                 "Generate read groups based on k-mer sharing between reads",
                 nullptr,
@@ -20,7 +16,6 @@ std::vector<Command> metamoumCommands = {
                 {{"FASTA/Q", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::flatfile},
                  {"common k-mer database", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
                  {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
-        // MetabuliBase.cpp:352-360
         {"easy-grouping", easyGroupGeneration, &localPar.easyGroupGeneration, COMMAND_MAIN,
                 "Generate read groups, faster and lighter, at lower graph precision",
                 nullptr,
@@ -30,7 +25,6 @@ std::vector<Command> metamoumCommands = {
                 {{"FASTA/Q", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::flatfile},
                  {"common k-mer database", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
                  {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
-        // MetabuliBase.cpp:361-371
         {"apply-group", groupApplication, &localPar.groupApplication, COMMAND_MAIN,
                 "Assigning group representative taxonomy label to unclassified query reads",
                 nullptr,
@@ -42,7 +36,6 @@ std::vector<Command> metamoumCommands = {
                  {"taxonomy directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory},
                  {"read-by-read result", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                  {"output directory", DbType::ACCESS_MODE_OUTPUT, DbType::NEED_DATA, &DbValidator::directory}}},
-        // MetabuliBase.cpp:48-57
         {"create-common-kmer-list", create_common_kmer_list, &localPar.createCommonKmerList, COMMAND_EXPERT,
                 "Create a list of k-mers that appear in multiple species",
                 nullptr,
@@ -53,7 +46,6 @@ std::vector<Command> metamoumCommands = {
                  {"A list of FASTA files", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                  {"Mapping file (accession to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                  {"Directory where the taxonomy DB is stored", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory}}},
-        // MetabuliBase.cpp:372-378
         {"count-common-kmers", count_common_kmers, &localPar.expand_diffidx, COMMAND_EXPERT,
                 "Count k-mers common at each taxonomy level",
                 nullptr,
@@ -61,7 +53,6 @@ std::vector<Command> metamoumCommands = {
                 "<i: database directory>",
                 CITATION_SPACEPHARER,
                 {{"database directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::directory}}},
-        // MetabuliBase.cpp:149-159
         {"gradeGroup", gradeGroup, &localPar.grade, COMMAND_EXPERT,
                 "Grade the grouping result (only for benchmarking)",
                 nullptr,
@@ -73,7 +64,6 @@ std::vector<Command> metamoumCommands = {
                 {"Mapping file (Query ID to tax ID)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                 {"Query name file", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                 {"taxonomy dir", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::directory}}},
-        // MetabuliBase.cpp:170-181
         {"gradeGroupByCoverage", gradeGroupByCoverage, &localPar.grade, COMMAND_EXPERT,
                 "Grade grouping results per coverage level (only for benchmarking)",
                 nullptr,
@@ -86,7 +76,6 @@ std::vector<Command> metamoumCommands = {
                  {"List of query name files (combined fasta or header list)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                  {"List of individual query fasta file paths (filename encodes coverage)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile},
                  {"Taxonomy directory", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA | DbType::VARIADIC, &DbValidator::directory}}},
-        // MetabuliBase.cpp:182-192
         {"gradeStrain", gradeStrain, &localPar.grade, COMMAND_EXPERT,
                 "Grade grouping results at strain level, against genome_id (only for benchmarking)",
                 nullptr,
@@ -100,9 +89,7 @@ std::vector<Command> metamoumCommands = {
                  {"List of query name files (combined fasta or header list)", DbType::ACCESS_MODE_INPUT, DbType::NEED_DATA, &DbValidator::flatfile}}},
 };
 
-// Both are declared extern by the mmseqs framework -- externalThreshold in
-// prefiltering/Prefiltering.h, externalDownloads in workflow/Databases.cpp -- so they have to be
-// defined even though Metamoum ships no prefilter thresholds and no download script.
+// Required by the mmseqs framework.
 std::vector<KmerThreshold> externalThreshold = {};
 
 std::vector<DatabaseDownload> externalDownloads = {};

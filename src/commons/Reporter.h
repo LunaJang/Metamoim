@@ -1,5 +1,5 @@
-#ifndef METABULI_REPORTER_H
-#define METABULI_REPORTER_H
+#ifndef METAMOUM_REPORTER_H
+#define METAMOUM_REPORTER_H
 #include "common.h"
 #include "iostream"
 #include "fstream"
@@ -126,4 +126,4 @@ public:
 };
 
 
-#endif //METABULI_REPORTER_H
+#endif //METAMOUM_REPORTER_H

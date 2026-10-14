@@ -1,5 +1,5 @@
-#ifndef METABULI_CREATE_COMMON_KMER_LIST_H
-#define METABULI_CREATE_COMMON_KMER_LIST_H
+#ifndef METAMOUM_CREATE_COMMON_KMER_LIST_H
+#define METAMOUM_CREATE_COMMON_KMER_LIST_H
 
 #include "editNames.h"
 #include "accession2taxid.h"
@@ -113,4 +113,4 @@ int create_common_kmer_list(int argc, const char **argv, const Command &command)
     return 0;
 }
 
-#endif // METABULI_CREATE_COMMON_KMER_LIST_H
+#endif // METAMOUM_CREATE_COMMON_KMER_LIST_H

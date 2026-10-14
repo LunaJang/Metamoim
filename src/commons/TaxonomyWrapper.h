@@ -1,5 +1,5 @@
-#ifndef METABULI_TAXONOMYWRAPPER_H
-#define METABULI_TAXONOMYWRAPPER_H
+#ifndef METAMOUM_TAXONOMYWRAPPER_H
+#define METAMOUM_TAXONOMYWRAPPER_H
 
 #include "NcbiTaxonomy.h"
 #include <unordered_set>
@@ -305,4 +305,4 @@ protected:
 
 };
 
-#endif //METABULI_TAXONOMYWRAPPER_H
+#endif //METAMOUM_TAXONOMYWRAPPER_H

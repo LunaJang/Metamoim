@@ -1,8 +1,8 @@
-#ifndef METABULI_EDITNAMES_H
-#define METABULI_EDITNAMES_H
+#ifndef METAMOUM_EDITNAMES_H
+#define METAMOUM_EDITNAMES_H
 
 #include <string>
 
 int editNames(const std::string & namesDmp, const std::string & taxidMap);
 
-#endif //METABULI_EDITNAMES_H
+#endif //METAMOUM_EDITNAMES_H

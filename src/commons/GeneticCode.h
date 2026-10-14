@@ -1,5 +1,5 @@
-#ifndef METABULI_GENETIC_CODE_H
-#define METABULI_GENETIC_CODE_H
+#ifndef METAMOUM_GENETIC_CODE_H
+#define METAMOUM_GENETIC_CODE_H
 
 #include <iostream>
 #include <vector>
@@ -587,4 +587,4 @@ class ReducedGeneticCode final : public GeneticCode {
         }
 };
 
-#endif //METABULI_GENETIC_CODE_H
+#endif //METAMOUM_GENETIC_CODE_H

@@ -1,5 +1,5 @@
-#ifndef METABULI_UNIREF_TREE_H
-#define METABULI_UNIREF_TREE_H
+#ifndef METAMOUM_UNIREF_TREE_H
+#define METAMOUM_UNIREF_TREE_H
 
 #include <sstream>
 #include <sys/stat.h>
@@ -63,4 +63,4 @@ public:
 
 
 
-#endif //METABULI_UNIREF_TREE_H
+#endif //METAMOUM_UNIREF_TREE_H

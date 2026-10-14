@@ -1,5 +1,5 @@
-#ifndef METABULI_DELTAIDXREADER_H
-#define METABULI_DELTAIDXREADER_H
+#ifndef METAMOUM_DELTAIDXREADER_H
+#define METAMOUM_DELTAIDXREADER_H
 
 #include <cstdint>
 #include <cstddef>
@@ -635,4 +635,4 @@ public:
 
 
 };
-#endif // METABULI_DELTAIDXREADER_H
+#endif // METAMOUM_DELTAIDXREADER_H

@@ -7,7 +7,7 @@ const int CITATION_SPACEPHARER = CITATION_END;
 
 class LocalParameters : public Parameters {
 public:
-    static const int DBTYPE_METABULI = 100;
+    static const int DBTYPE_METAMOUM = 100;
 
     // static void initInstance() {
     //     new LocalParameters;

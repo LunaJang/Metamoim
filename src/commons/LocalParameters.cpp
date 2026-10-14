@@ -1056,7 +1056,7 @@ void LocalParameters::printParameters(const std::string &module, int argc, const
     std::stringstream ss;
     ss << std::boolalpha;
 
-    ss << std::setw(maxWidth) << std::left  << "Metabuli Version (commit):" << "\t" << version << "\n";
+    ss << std::setw(maxWidth) << std::left  << "Metamoum Version (commit):" << "\t" << version << "\n";
 
     for (size_t i = 0; i < par.size(); i++) {
         if (par[i]->category & MMseqsParameter::COMMAND_HIDDEN) {

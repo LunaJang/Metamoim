@@ -1,5 +1,5 @@
-#ifndef METABULI_KMEREXTRACTER_H
-#define METABULI_KMEREXTRACTER_H
+#ifndef METAMOUM_KMEREXTRACTER_H
+#define METAMOUM_KMEREXTRACTER_H
 #include "SeqIterator.h"
 #include "QueryIndexer.h"
 #include "KSeqWrapper.h"
@@ -207,4 +207,4 @@ public:
         SeqEntry & savedSeq);
 };
 
-#endif //METABULI_KMEREXTRACTER_H
+#endif //METAMOUM_KMEREXTRACTER_H
