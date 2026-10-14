@@ -6,7 +6,7 @@
 
 LocalParameters& localPar = LocalParameters::getLocalInstance();
 
-std::vector<Command> metamoumCommands = {
+std::vector<Command> metamoimCommands = {
         {"grouping", groupGeneration, &localPar.groupGeneration, COMMAND_MAIN,
                 "Generate read groups based on k-mer sharing between reads",
                 nullptr,

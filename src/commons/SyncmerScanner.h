@@ -1,5 +1,5 @@
-#ifndef METAMOUM_SYNCMER_SCANNER_H
-#define METAMOUM_SYNCMER_SCANNER_H
+#ifndef METAMOIM_SYNCMER_SCANNER_H
+#define METAMOIM_SYNCMER_SCANNER_H
 
 #include <iostream>
 #include <deque>
@@ -432,4 +432,4 @@ public:
     }
 };
 
-#endif //METAMOUM_SYNCMER_SCANNER_H
+#endif //METAMOIM_SYNCMER_SCANNER_H

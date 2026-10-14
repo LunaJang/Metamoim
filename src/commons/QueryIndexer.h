@@ -1,5 +1,5 @@
-#ifndef METAMOUM_QUERYINDEXOR_H
-#define METAMOUM_QUERYINDEXOR_H
+#ifndef METAMOIM_QUERYINDEXOR_H
+#define METAMOIM_QUERYINDEXOR_H
 
 #include "LocalParameters.h"
 #include "Kmer.h"
@@ -76,4 +76,4 @@ public:
 };
 
 
-#endif //METAMOUM_QUERYINDEXOR_H
+#endif //METAMOIM_QUERYINDEXOR_H

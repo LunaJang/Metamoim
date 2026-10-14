@@ -1,5 +1,5 @@
-#ifndef METAMOUM_REPORTER_H
-#define METAMOUM_REPORTER_H
+#ifndef METAMOIM_REPORTER_H
+#define METAMOIM_REPORTER_H
 #include "common.h"
 #include "iostream"
 #include "fstream"
@@ -126,4 +126,4 @@ public:
 };
 
 
-#endif //METAMOUM_REPORTER_H
+#endif //METAMOIM_REPORTER_H

@@ -1,5 +1,5 @@
-#ifndef METAMOUM_LOCALUTIL_H
-#define METAMOUM_LOCALUTIL_H
+#ifndef METAMOIM_LOCALUTIL_H
+#define METAMOIM_LOCALUTIL_H
 
 #include "Util.h"
 #include <string>
@@ -70,4 +70,4 @@ T LocalUtil::getMaxCoveredLength(T queryLength) {
     }
 }
 
-#endif //METAMOUM_LOCALUTIL_H
+#endif //METAMOIM_LOCALUTIL_H

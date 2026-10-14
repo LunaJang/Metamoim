@@ -16,22 +16,22 @@ add_subdirectory(workflow)
 add_subdirectory(uniref)
 add_subdirectory(read-group)
 
-add_executable(metamoum
+add_executable(metamoim
         ${commons_source_files}
         ${util_source_files}
         ${workflow_source_files}
         ${uniref_source_files}
         ${read_group_source_files}
-        metamoum.cpp
+        metamoim.cpp
         LocalCommandDeclarations.h
-        MetamoumBase.cpp)
+        MetamoimBase.cpp)
 
-mmseqs_setup_derived_target(metamoum)
-target_link_libraries(metamoum version)
-target_link_libraries(metamoum prodigal)
-target_link_libraries(metamoum fasta_validator)
-target_link_libraries(metamoum fastq_utils)
-target_link_libraries(metamoum yxml)
-target_link_libraries(metamoum jsonlib)
+mmseqs_setup_derived_target(metamoim)
+target_link_libraries(metamoim version)
+target_link_libraries(metamoim prodigal)
+target_link_libraries(metamoim fasta_validator)
+target_link_libraries(metamoim fastq_utils)
+target_link_libraries(metamoim yxml)
+target_link_libraries(metamoim jsonlib)
 
-install(TARGETS metamoum DESTINATION bin)
+install(TARGETS metamoim DESTINATION bin)

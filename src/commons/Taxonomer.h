@@ -1,5 +1,5 @@
-#ifndef METAMOUM_TAXONOMER_H
-#define METAMOUM_TAXONOMER_H
+#ifndef METAMOIM_TAXONOMER_H
+#define METAMOIM_TAXONOMER_H
 
 #include <unordered_map>
 #include <unordered_set>
@@ -165,4 +165,4 @@ public:
 };
 
 
-#endif //METAMOUM_TAXONOMER_H
+#endif //METAMOIM_TAXONOMER_H

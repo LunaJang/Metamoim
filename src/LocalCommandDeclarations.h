@@ -1,5 +1,5 @@
-#ifndef METAMOUM_LOCALCOMMANDDECLARATIONS_H
-#define METAMOUM_LOCALCOMMANDDECLARATIONS_H
+#ifndef METAMOIM_LOCALCOMMANDDECLARATIONS_H
+#define METAMOIM_LOCALCOMMANDDECLARATIONS_H
 #include "Command.h"
 
 extern int groupGeneration(int argc, const char **argv, const Command& command);
@@ -11,4 +11,4 @@ extern int gradeGroup(int argc, const char **argv, const Command& command);
 extern int gradeGroupByCoverage(int argc, const char **argv, const Command& command);
 extern int gradeStrain(int argc, const char **argv, const Command& command);
 
-#endif //METAMOUM_LOCALCOMMANDDECLARATIONS_H
+#endif //METAMOIM_LOCALCOMMANDDECLARATIONS_H

@@ -1,5 +1,5 @@
-#ifndef METAMOUM_KMERMATCHER_H
-#define METAMOUM_KMERMATCHER_H
+#ifndef METAMOIM_KMERMATCHER_H
+#define METAMOIM_KMERMATCHER_H
 #include "BitManipulateMacros.h"
 #include "FileUtil.h"
 #include "LocalParameters.h"
@@ -357,4 +357,4 @@ inline uint16_t KmerMatcher::getHammings_reverse(
 }
 
 
-#endif // METAMOUM_KMERMATCHER_H
+#endif // METAMOIM_KMERMATCHER_H

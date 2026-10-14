@@ -1,6 +1,6 @@
-# Metamoum
+# Metamoim
 
-Metamoum groups metagenomic reads by the k-mers they share, and propagates a group's label to
+Metamoim groups metagenomic reads by the k-mers they share, and propagates a group's label to
 its unlabelled members.
 
 It is the read-grouping half of [Metabuli](https://github.com/steineggerlab/Metabuli), split out
@@ -30,20 +30,20 @@ submodule commits, and a comparison of the two builds' compiler warnings.
 | `gradeGroupByCoverage` | The same, split by per-genome coverage |
 | `gradeStrain` | Score against genome ids rather than taxonomy |
 
-The last five are expert commands and are hidden from `metamoum -h`, as they are in Metabuli.
+The last five are expert commands and are hidden from `metamoim -h`, as they are in Metabuli.
 
 ## Build
 
 Requires CMake 3.15+, a C++17 compiler, OpenMP and zlib.
 
 ```sh
-git clone --recursive <this repository> Metamoum
-cd Metamoum
+git clone --recursive <this repository> Metamoim
+cd Metamoim
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```
 
-The binary lands at `build/src/metamoum`; `cmake --install build` puts it in `bin/`.
+The binary lands at `build/src/metamoim`; `cmake --install build` puts it in `bin/`.
 
 If the repository was cloned without `--recursive`:
 
@@ -59,13 +59,13 @@ Metabuli does it.
 
 ```sh
 # 1. a common k-mer list, once per reference set
-metamoum create-common-kmer-list <db dir> <FASTA list> <accession2taxid> <taxonomy dir>
+metamoim create-common-kmer-list <db dir> <FASTA list> <accession2taxid> <taxonomy dir>
 
 # 2. group the reads
-metamoum grouping <read_1.fq> <read_2.fq> <common k-mer db> <out dir>
+metamoim grouping <read_1.fq> <read_2.fq> <common k-mer db> <out dir>
 
 # 3. propagate labels onto a read-by-read classification
-metamoum apply-group <out dir>/groups <out dir>/groupMap <taxonomy dir> <classification.tsv> <out dir>
+metamoim apply-group <out dir>/groups <out dir>/groupMap <taxonomy dir> <classification.tsv> <out dir>
 ```
 
 `grouping` writes `groups` (one line per group: id then members), `groupMap` (one line per read:
@@ -77,7 +77,7 @@ It reads a classifier's read-by-read output; `--readid-col`, `--taxid-col` and `
 where the fields are (one-based), and `--kraken2` reads Kraken2's LCA mapping as a confidence
 score.
 
-Run `metamoum <command> -h` for the full parameter list — every parameter carries the reasoning
+Run `metamoim <command> -h` for the full parameter list — every parameter carries the reasoning
 and the measurements behind its default.
 
 ## License

@@ -1,9 +1,9 @@
-# Verification — Metamoum vs Metabuli `64680ee4`
+# Verification — Metamoim vs Metabuli `64680ee4`
 
-> 작성일: 2026-10-14 · Metamoum 커밋: (이 문서가 포함된 첫 커밋)
+> 작성일: 2026-10-14 · Metamoim 커밋: (이 문서가 포함된 첫 커밋)
 > · 기준: `/home/user1/src/Metabuli_work` @ `64680ee4` (브랜치 `master`)
 
-Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 입력에 같은 산출물을 내야
+Metamoim은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 입력에 같은 산출물을 내야
 한다**는 것이 설계 요구다. 그 요구는 "같은 코드를 같은 플래그로 컴파일한다"로 환원되며,
 이 문서는 그 환원이 성립하는지에 대한 증거를 모아 둔 것이다.
 
@@ -44,15 +44,15 @@ Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 
 ### 1.2 브랜딩만 바뀐 파일 (21파일)
 
-도구 이름이 `metamoum`인데 소스가 자기를 Metabuli라고 부르는 상태를 없앴다.
+도구 이름이 `metamoim`인데 소스가 자기를 Metabuli라고 부르는 상태를 없앴다.
 **로직은 한 줄도 손대지 않았다.**
 
 | 종류 | 파일 수 | 변경 |
 |---|---|---|
-| 헤더 가드 | 17 | `METABULI_*` → `METAMOUM_*` (`#ifndef`/`#define`/`#endif` 3줄씩) |
-| `src/commons/LocalParameters.h` | 1 | `DBTYPE_METABULI` → `DBTYPE_METAMOUM` (참조하는 곳 0군데인 상수) |
-| `src/commons/LocalParameters.cpp:1059` | 1 | 파라미터 덤프 `"Metabuli Version (commit):"` → `"Metamoum Version (commit):"` |
-| `src/commons/IndexCreator.cpp:1466` | 1 | `db.parameters`의 키 `Metabuli commit used to create the DB` → `Metamoum …` |
+| 헤더 가드 | 17 | `METABULI_*` → `METAMOIM_*` (`#ifndef`/`#define`/`#endif` 3줄씩) |
+| `src/commons/LocalParameters.h` | 1 | `DBTYPE_METABULI` → `DBTYPE_METAMOIM` (참조하는 곳 0군데인 상수) |
+| `src/commons/LocalParameters.cpp:1059` | 1 | 파라미터 덤프 `"Metabuli Version (commit):"` → `"Metamoim Version (commit):"` |
+| `src/commons/IndexCreator.cpp:1466` | 1 | `db.parameters`의 키 `Metabuli commit used to create the DB` → `Metamoim …` |
 | `src/read-group/GroupApplier.cpp:179` | 1 | `"Original Metabuli result loaded from"` → `"Original classification result loaded from"` |
 
 **이 다섯 가지가 산출물에 닿는 범위**
@@ -62,7 +62,7 @@ Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 - `IndexCreator.cpp`: `create-common-kmer-list`가 쓰는 `db.parameters`의 **한 줄**.
   이 키를 읽는 코드는 없다 — `common.cpp:136-158`의 파서가 보는 키는 `DB_name`,
   `Creation_date`, `Skip_redundancy`, `Syncmer`, `Syncmer_len`, `Kmer_format`,
-  `Total_seq_length`, `Accession_level`뿐이다. 즉 기존 Metabuli DB를 Metamoum이 읽는 데도,
+  `Total_seq_length`, `Accession_level`뿐이다. 즉 기존 Metabuli DB를 Metamoim이 읽는 데도,
   그 반대에도 지장이 없다
 
 **`groups` · `groupMap` · `groupRep` · `skipped_kmers` · `updated_classifications.tsv` ·
@@ -79,16 +79,16 @@ Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 | `src/version/CMakeLists.txt`, `src/read-group/CMakeLists.txt` | **동일** (무수정 복사) |
 | `src/commons/CMakeLists.txt` | `commons/Classifier.cpp`·`commons/Classifier.h` **2줄 삭제뿐**, 추가 0줄 |
 | `src/{util,workflow,uniref}/CMakeLists.txt` | 신규 — 각각 9 / 2 / 2 파일 |
-| `CMakeLists.txt` | 신규 — Metabuli 최상위의 동형. `project(metamoum)`, `data/` 없음 |
+| `CMakeLists.txt` | 신규 — Metabuli 최상위의 동형. `project(metamoim)`, `data/` 없음 |
 | `src/CMakeLists.txt` | 신규 — `benchmark` 제외, 타깃명 교체 |
-| `src/metamoum.cpp` | 신규 — 진입점 |
-| `src/MetamoumBase.cpp` | 신규 — 커맨드 8개를 `MetabuliBase.cpp`에서 줄 단위 추출 |
+| `src/metamoim.cpp` | 신규 — 진입점 |
+| `src/MetamoimBase.cpp` | 신규 — 커맨드 8개를 `MetabuliBase.cpp`에서 줄 단위 추출 |
 | `src/LocalCommandDeclarations.h` | 신규 — 진입 함수 8개 선언 |
-| `.gitignore` | `util/metabuli` → `util/metamoum` **한 줄** |
+| `.gitignore` | `util/metabuli` → `util/metamoim` **한 줄** |
 
 ## 2. 의존 고정
 
-| 항목 | Metamoum | Metabuli | 일치 |
+| 항목 | Metamoim | Metabuli | 일치 |
 |---|---|---|---|
 | `lib/mmseqs` (index SHA) | `62f8d3e17b429825695273e347775871339cda75` | 같음 | 예 |
 | `lib/fasta_validator` (index SHA) | `ab9c05b81fc28c210dff5319e110b6aa8b81afa7` | 같음 | 예 |
@@ -113,11 +113,11 @@ Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 | | 건수 |
 |---|---|
 | Metabuli `64680ee4` 고유 경고 | 103 |
-| Metamoum 고유 경고 | 88 |
-| **`Metamoum \ Metabuli` (증가분)** | **0 — 공집합** (브랜딩 정리 뒤 재측정에서도 88건 그대로) |
-| `Metabuli \ Metamoum` | 15 |
+| Metamoim 고유 경고 | 88 |
+| **`Metamoim \ Metabuli` (증가분)** | **0 — 공집합** (브랜딩 정리 뒤 재측정에서도 88건 그대로) |
+| `Metabuli \ Metamoim` | 15 |
 
-차집합 15건은 **전부 Metamoum이 복사하지 않은 9개 파일**에서 나온다:
+차집합 15건은 **전부 Metamoim이 복사하지 않은 9개 파일**에서 나온다:
 `commons/Classifier.cpp`(4) · `uniref/UnirefDbCreator.{cpp,h}`(3) · `util/inspect_db.cpp`(2) ·
 `util/printDeltaIdx.cpp`(2) · `util/createnewtaxalist.cpp`(1) · `util/expand_diffidx.cpp`(1) ·
 `workflow/assign-uniref.cpp`(1) · `workflow/create-uniref-tree.cpp`(1).
@@ -133,11 +133,11 @@ Metamoum은 Metabuli의 read grouping 경로를 떼어낸 것이고, **같은 �
 
 | | |
 |---|---|
-| 빌드 | `[100%] Built target metamoum`, exit 0 |
+| 빌드 | `[100%] Built target metamoim`, exit 0 |
 | 에러 | 0 |
 | 미정의 심볼 | 0 — `Classifier`·`UnirefDbCreator`·`UnirefClassifier` 제외가 링커에서 성립 |
 | 되살린 TU | 없음 |
-| 바이너리 | `build/src/metamoum` 26,923,384 B (Metabuli 27,627,960 B) |
+| 바이너리 | `build/src/metamoim` 26,923,384 B (Metabuli 27,627,960 B) |
 
 ## 5. Metabuli_work 무수정
 

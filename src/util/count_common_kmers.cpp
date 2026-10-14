@@ -1,5 +1,5 @@
-#ifndef METAMOUM_COUNT_COMMON_KMERS_H
-#define METAMOUM_COUNT_COMMON_KMERS_H
+#ifndef METAMOIM_COUNT_COMMON_KMERS_H
+#define METAMOIM_COUNT_COMMON_KMERS_H
 
 #include <iostream>
 #include <stdint.h>
@@ -164,4 +164,4 @@ int count_common_kmers(int argc, const char **argv, const Command &command) {
 
     return 0;
 }
-#endif //METAMOUM_COUNT_COMMON_KMERS_H
+#endif //METAMOIM_COUNT_COMMON_KMERS_H

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-project(metamoum CXX C)
+project(metamoim CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,5 +20,5 @@ add_subdirectory(lib/fastq_utils)
 add_subdirectory(lib/yxml)
 add_subdirectory(lib/json)
 add_subdirectory(src)
-target_link_libraries(metamoum yxml)
+target_link_libraries(metamoim yxml)
 include_directories(lib)

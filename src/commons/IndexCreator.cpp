@@ -1463,7 +1463,7 @@ void IndexCreator::writeDbParameters() {
     }
     fprintf(handle, "DB_name\t%s\n", par.dbName.c_str());
     fprintf(handle, "Creation_date\t%s\n", par.dbDate.c_str());
-    fprintf(handle, "Metamoum commit used to create the DB\t%s\n", version);
+    fprintf(handle, "Metamoim commit used to create the DB\t%s\n", version);
     fprintf(handle, "Spaced_kmer_mask\t%s\n", par.spaceMask.c_str());
     fprintf(handle, "Accession_level\t%d\n", par.accessionLevel);
     fprintf(handle, "Mask_mode\t%d\n", par.maskMode);
