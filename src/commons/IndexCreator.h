@@ -235,13 +235,19 @@ protected:
         constexpr double MEGABYTE = 1024.0 * 1024.0;
         constexpr double MEMORY_PER_THREAD_MB = 50.0;
         
+        // --max-ram is a ceiling, not a demand. Asking for 128 GiB on a 16 GB machine used
+        // to size a 90 GB buffer, and the calloc for it returned null.
+        const size_t declared = static_cast<size_t>(maxRam * GIGABYTE);
+        const size_t usable = std::min(declared, availableMemoryBytes());
+        maxRam = static_cast<size_t>(usable / GIGABYTE);
+
         float c = 0.7f;
         if (maxRam < 16) {
             c = 0.5f;
         } else if (maxRam <= 32) {
             c = 0.6f;
         }
-        double totalRamBytes = maxRam * GIGABYTE * c;
+        double totalRamBytes = usable * c;
         double memoryForThreads = par.threads * MEMORY_PER_THREAD_MB * MEGABYTE;
         double availableMemory = totalRamBytes - memoryForThreads;
 

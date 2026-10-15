@@ -25,31 +25,31 @@ run_pipeline() {  # <binary> <fixture> <outdir> [threads] [partitions]
     # the run's own copy and leaves the fixture alone.
     cp "$fixture/fasta_list.txt" "$d/fasta_list.txt"
 
-    "$bin" create-common-kmer-list --gtdb "$GTDB" --threads "$threads" --cds-info x \
+    "$bin" create-common-kmer-list --gtdb "$GTDB" --threads "$threads" --max-ram 4 --cds-info x \
         --syncmer 1 --smer-len 5 --kmer-format 5 \
         "$d/ckl" "$d/fasta_list.txt" "$acc2taxid" "$d/taxonomy" \
         > "$d/ckl.log" 2>&1 || { echo "create-common-kmer-list failed: $d" >&2; return 1; }
 
-    "$bin" grouping --threads "$threads" --partitions "$partitions" \
+    "$bin" grouping --threads "$threads" --partitions "$partitions" --max-ram 4 \
         "$fixture/reads/R1.fq" "$fixture/reads/R2.fq" "$d/ckl" "$d/group" \
         > "$d/group.log" 2>&1 || { echo "grouping failed: $d" >&2; return 1; }
 
     # The derived cap keeps every k-mer of a fixture this small, so one arm sets it by hand
     # to make the skip path write something.
-    "$bin" grouping --threads "$threads" --partitions "$partitions" --max-kmer-reads 30 \
+    "$bin" grouping --threads "$threads" --partitions "$partitions" --max-ram 4 --max-kmer-reads 30 \
         "$fixture/reads/R1.fq" "$fixture/reads/R2.fq" "$d/ckl" "$d/cap" \
         > "$d/cap.log" 2>&1 || { echo "grouping (capped) failed: $d" >&2; return 1; }
 
-    "$bin" easy-grouping --threads "$threads" --partitions "$partitions" \
+    "$bin" easy-grouping --threads "$threads" --partitions "$partitions" --max-ram 4 \
         "$fixture/reads/R1.fq" "$fixture/reads/R2.fq" "$d/ckl" "$d/easy" \
         > "$d/easy.log" 2>&1 || { echo "easy-grouping failed: $d" >&2; return 1; }
 
-    "$bin" apply-group --threads "$threads" \
+    "$bin" apply-group --threads "$threads" --max-ram 4 \
         "$d/group/groups" "$d/group/groupMap" "$d/taxonomy" \
         "$fixture/classification.tsv" "$d/apply" \
         > "$d/apply.log" 2>&1 || { echo "apply-group failed: $d" >&2; return 1; }
 
-    "$bin" apply-group --threads "$threads" \
+    "$bin" apply-group --threads "$threads" --max-ram 4 \
         "$d/easy/groups" "$d/easy/groupMap" "$d/taxonomy" \
         "$fixture/classification.tsv" "$d/apply_easy" \
         > "$d/apply_easy.log" 2>&1 || { echo "apply-group (star) failed: $d" >&2; return 1; }
