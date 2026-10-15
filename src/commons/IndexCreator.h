@@ -263,19 +263,25 @@ protected:
     }
 
     size_t calculateBufferSizeForMerge(size_t maxRam, int fileCnt) {
+        constexpr double GIGABYTE = 1024.0 * 1024.0 * 1024.0;
+        const size_t usable = std::min(static_cast<size_t>(maxRam * GIGABYTE), availableMemoryBytes());
+        maxRam = static_cast<size_t>(usable / GIGABYTE);
+
+        // Tested small to large. The old order asked maxRam <= 32 first, so the < 16 arm
+        // could never be reached.
         float c = 0.7;
-        if (maxRam <= 32) {
-            c = 0.6;
-        } else if (maxRam < 16) {
+        if (maxRam < 16) {
             c = 0.5;
+        } else if (maxRam <= 32) {
+            c = 0.6;
         }
-        if ((maxRam * 1024.0 * 1024.0 * 1024.0 * c - (par.threads * 50.0 * 1024.0 * 1024.0)) <= 0.0) {
+        const double forBuffer = usable * c - (par.threads * 50.0 * 1024.0 * 1024.0);
+        if (forBuffer <= 0.0) {
             cerr << "Not enough memory to create index" << endl;
             cerr << "Please increase the RAM usage or decrease the number of threads" << endl;
             exit(EXIT_FAILURE);
         }
-        return static_cast<size_t>((maxRam * 1024.0 * 1024.0 * 1024.0 * c - (par.threads * 50.0 * 1024.0 * 1024.0))/ 
-                                  (sizeof(Kmer) + sizeof(size_t)));
+        return static_cast<size_t>(forBuffer / (sizeof(Kmer) + sizeof(size_t)));
     }
 
     void loadMergedTaxIds(const std::string &mergedFile, unordered_map<TaxID, TaxID> & old2new);
@@ -353,7 +359,13 @@ public:
 
 template <FilterMode M>
 void IndexCreator::mergeTargetFiles() {
-    size_t bufferSize = 1024 * 1024 * 512;
+    // 512 Mi entries was hardcoded: 1 GB of uint16 plus 2 GB of uint32, whatever --max-ram
+    // said and whatever the index's size was. An eighth of the usable budget, floored so a
+    // tiny run still writes in reasonable chunks.
+    const size_t writeBudget = std::min(static_cast<size_t>(par.ramUsage) * 1024 * 1024 * 1024,
+                                        availableMemoryBytes()) / 8;
+    size_t bufferSize = std::max<size_t>(1024 * 1024, std::min<size_t>(1024 * 1024 * 512,
+                                         writeBudget / (sizeof(uint16_t) + sizeof(uint32_t))));
     WriteBuffer<uint16_t> diffBuffer(mergedDeltaIdxFileName, bufferSize);
     // Merge output is written as uint32 first. After the stream is complete,
     // finalizeInfoIndex() either packs it or records the raw uint32 metadata.
@@ -390,11 +402,13 @@ void IndexCreator::mergeTargetFiles() {
     int splitCheck = 0;
 
     cout << "Merging target files..." << endl;
-    size_t kmerBufferSize = 1024 * 1024 * 1024;
+    // Was a hardcoded 2^30 entries, 16 GB of Kmer, which ignored --max-ram and could not be
+    // allocated on a machine smaller than that. The floor below is what the loop needs.
+    size_t kmerBufferSize = calculateBufferSizeForMerge(par.ramUsage, (int) splitNum);
     if (kmerBufferSize < valueBufferSize * splitNum * 2) {
         kmerBufferSize = valueBufferSize * splitNum * 2; 
     }
-    Buffer<Kmer> kmerBuffer(kmerBufferSize); // 64GB
+    Buffer<Kmer> kmerBuffer(kmerBufferSize);
     std::atomic<int> hasOverflow{0};
     std::vector<std::atomic<bool>> completedSplits(splitNum);
     int remainingSplits = splitNum;
