@@ -462,9 +462,9 @@ manifest는 "바뀌었다"를, summary는 "무엇이 바뀌었다"를 말한다.
 순수한 최적화라면 diff가 없다. diff가 났는데 최적화라고 주장한다면, 그 주장을 증명할
 책임이 diff에 적혀 있다.
 
-`run_equivalence.sh`는 남아 있되 **매 push에서는 안 돈다**(`workflow_dispatch` 전용).
-역할이 달라졌다 — golden이 "지난번에 우리가 쓴 것"이 아니라 "Metabuli `64680ee4`가
-낸 것"임을 다시 못 박는 용도다. golden을 갱신할 때 같이 돌린다.
+`run_equivalence.sh`는 **삭제했다**. §7~§9가 한 일은 끝났다 — golden이 Metabuli
+`64680ee4`의 출력과 같다는 것은 거기서 증명됐고, 그 결과가 `test/golden/`에 박혀 있다.
+다시 대조하려면 이 문서의 기록과 git 히스토리를 보고 되살리면 된다.
 
 ### 10.3 네트워크 제거
 
@@ -507,7 +507,8 @@ accession으로 바꾸는 것은 데이터를 지어내는 일이다.
 | job | 언제 | 하는 일 |
 |---|---|---|
 | `golden` | 모든 push·PR | metamoim만 빌드 → fixture 생성 → golden·불변성·flush/fold. 로컬 20코어 기준 약 1분 |
-| `equivalence` | 수동 실행만 | Metabuli `64680ee4`도 빌드해서 §7~§9를 다시 돌린다 |
+
+job은 이것 하나다. Metabuli를 빌드하는 job은 두지 않았다 — 대조는 §7~§9에서 끝났다.
 
 ccache를 `actions/cache`로 재사용한다. 실패하면 `summary.txt`·`manifest.sha256`·로그를
 artifact로 올린다.
