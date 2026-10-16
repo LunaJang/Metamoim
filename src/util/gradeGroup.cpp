@@ -37,6 +37,46 @@ void countAtRank_CAMI(const unordered_map<int, vector<int>>& tax2groupsAtRank,
 void setGradeGroupDefault(LocalParameters & par){
     par.testRank = "";
     par.testType = "gtdb";
+    par.groupStats = "";
+}
+
+// One row per group, so purity can be read as a distribution rather than as the pooled
+// mean. The mean is dominated by the largest groups; whether the small ones are the
+// dirty ones is a different question and this is what answers it. Its own pass, so the
+// scoring above is untouched.
+static void writeGroupStats(const string & path, const string & rank,
+                            const unordered_map<int, vector<int>> & group2taxs,
+                            const TaxonomyWrapper & ncbiTaxonomy) {
+    ofstream out(path);
+    if (!out.is_open()) {
+        cerr << "Cannot open " << path << " for writing" << endl;
+        return;
+    }
+    out << "#group\trank\tscored_reads\tmajority_taxid\tmajority_reads\tpurity\n";
+    vector<int> ids;
+    ids.reserve(group2taxs.size());
+    for (const auto & kv : group2taxs) { ids.push_back(kv.first); }
+    sort(ids.begin(), ids.end());
+    for (const int groupId : ids) {
+        const vector<int> & memberTaxs = group2taxs.at(groupId);
+        unordered_map<TaxID, size_t> freq;
+        for (const int memberTax : memberTaxs) {
+            freq[ncbiTaxonomy.getTaxIdAtRank(memberTax, rank)]++;
+        }
+        TaxID major = 0;
+        size_t majorCnt = 0;
+        for (const auto & p : freq) {
+            if (p.second > majorCnt || (p.second == majorCnt && p.first < major)) {
+                major = p.first;
+                majorCnt = p.second;
+            }
+        }
+        out << groupId << "\t" << rank << "\t" << memberTaxs.size() << "\t"
+            << major << "\t" << majorCnt << "\t"
+            << (double) majorCnt / (double) memberTaxs.size() << "\n";
+    }
+    out.close();
+    cerr << "Per-group statistics at " << rank << " written to " << path << endl;
 }
 
 int gradeGroup(int argc, const char **argv, const Command &command) {
@@ -296,6 +336,14 @@ int gradeGroup(int argc, const char **argv, const Command &command) {
                 countAtRank_CAMI(tax2groups[rank], group2taxs, ncbiTaxonomy,
                                  results[i].countsAtRanks[rank], rank);
                 results[i].countsAtRanks[rank].calculate();                 
+            }
+
+            if (!par.groupStats.empty()) {
+                const string & statsRank = ranks_local.back();
+                const string path = (numberOfFiles == 1)
+                    ? par.groupStats
+                    : par.groupStats + "." + to_string(i);
+                writeGroupStats(path, statsRank, group2taxs, ncbiTaxonomy);
             }
 
             cout << readGroupFileName << endl;

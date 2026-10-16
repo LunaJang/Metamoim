@@ -371,6 +371,17 @@ LocalParameters::LocalParameters() :
                         typeid(int),
                         (void *) &maxBufferedPairs,
                         "^[0-9]+$"),
+        GROUP_STATS(GROUP_STATS_ID,
+                        "--group-stats",
+                        "gradeGroup: write one row per group to this file",
+                        "Writes group id, size, majority taxon and purity for every "
+                        "group, at the last rank being scored. The rank rows gradeGroup "
+                        "prints are pooled over groups and the largest groups dominate "
+                        "them; this is the same quantity before that average is taken. "
+                        "Empty, the default, writes nothing.",
+                        typeid(std::string),
+                        (void *) &groupStats,
+                        "^.*$"),
         COMMON_KMER_SPAN(COMMON_KMER_SPAN_ID,
                     "--common-kmer-span",
                     "K-mers discarded either side of a common-k-mer hit (0=the hit alone)",
@@ -796,6 +807,7 @@ LocalParameters::LocalParameters() :
     weakBandRatio = 0.3333f;
     partitions = 16;
     maxBufferedPairs = 0;
+    groupStats = "";
     // 0 = clique. Spelled as a literal rather than EdgeMode: that enum lives in the read-group
     // module, and LocalParameters must not depend on it.
     edgeMode = 0;
@@ -985,6 +997,7 @@ LocalParameters::LocalParameters() :
 
     // grade
     grade.push_back(&TEST_RANK);
+    grade.push_back(&GROUP_STATS);
     grade.push_back(&TEST_TYPE);
     grade.push_back(&PARAM_THREADS);
     grade.push_back(&READID_COL);
