@@ -8,6 +8,7 @@
 #include <regex>
 #include <cstdint>
 #include <fstream>
+#include <iomanip>
 #include <unordered_map>
 #include <vector>
 
@@ -53,6 +54,7 @@ static void writeGroupStats(const string & path, const string & rank,
         return;
     }
     out << "#group\trank\tscored_reads\tmajority_taxid\tmajority_reads\tpurity\n";
+    size_t totalMajor = 0, totalScored = 0;
     vector<int> ids;
     ids.reserve(group2taxs.size());
     for (const auto & kv : group2taxs) { ids.push_back(kv.first); }
@@ -71,12 +73,22 @@ static void writeGroupStats(const string & path, const string & rank,
                 majorCnt = p.second;
             }
         }
+        totalMajor += majorCnt;
+        totalScored += memberTaxs.size();
         out << groupId << "\t" << rank << "\t" << memberTaxs.size() << "\t"
             << major << "\t" << majorCnt << "\t"
             << (double) majorCnt / (double) memberTaxs.size() << "\n";
     }
     out.close();
+    // The same pooled purity the rank row carries, summed here in integers from the
+    // rows just written. countAtRank_CAMI sums the same quantity into a float, and on
+    // the large cells the two do not agree; printing both on one line says which run
+    // and which cell, instead of comparing across files afterwards.
     cerr << "Per-group statistics at " << rank << " written to " << path << endl;
+    cerr << "pooled purity from these rows: "
+         << setprecision(9) << (double) totalMajor / (double) totalScored
+         << "  (" << totalMajor << " of " << totalScored << " reads in "
+         << ids.size() << " groups)" << endl;
 }
 
 int gradeGroup(int argc, const char **argv, const Command &command) {
