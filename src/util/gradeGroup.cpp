@@ -16,10 +16,14 @@ using namespace std;
 
 struct CountAtRank {
     int total;
-    float purity;
-    float recall;
-    float f1;
-    float ARI;
+    // double, not float. These are sums over tens of millions of reads, and near 67 M
+    // a float's neighbours are 8 apart, so a group of two reads adds nothing to the
+    // running total. On benchmark_without_R220/species-inclusion that moved the species
+    // purity from 0.881974 to 0.884525.
+    double purity;
+    double recall;
+    double f1;
+    double ARI;
     void calculate() {
         f1 = 2 * purity * recall / (purity + recall);
         ARI = 0.0;
@@ -387,15 +391,15 @@ void countAtRank_CAMI(const unordered_map<int, vector<int>>& tax2groupsAtRank,
                       const unordered_map<int, vector<int>>& group2taxs, 
                       const TaxonomyWrapper& ncbiTaxonomy, CountAtRank& count, const string& rank) {
     // purity (number of reads with major taxonomy in each group)
-    float numMajorTaxs = 0;
-    float numGroupedReads = 0;
+    double numMajorTaxs = 0;
+    double numGroupedReads = 0;
     for (const auto& [groupId, memberTaxs] : group2taxs){
-        std::unordered_map<TaxID, float> freq;
+        std::unordered_map<TaxID, size_t> freq;
         for (const auto& memberTax : memberTaxs){
             freq[ncbiTaxonomy.getTaxIdAtRank(memberTax, rank)]++;
         }
         
-        float numMajorTaxsinGroup = 0;
+        size_t numMajorTaxsinGroup = 0;
         for (auto &p : freq) {
             numMajorTaxsinGroup = std::max(numMajorTaxsinGroup, p.second);
         }
@@ -405,20 +409,20 @@ void countAtRank_CAMI(const unordered_map<int, vector<int>>& tax2groupsAtRank,
     count.purity = numMajorTaxs / numGroupedReads;
 
     // recall (number of reads with same taxonomy from one group containing most of the reads / number of reads with same taxonomy)
-    float numMajorGroup = 0;
-    float numTaxGroups = 0;
+    double numMajorGroup = 0;
+    double numTaxGroups = 0;
     for (const auto& [tax, groupIds] : tax2groupsAtRank){
-        std::unordered_map<TaxID, float> freq;
+        std::unordered_map<TaxID, size_t> freq;
         for (const auto& groupId : groupIds){
             freq[groupId]++;
         }
         
-        float numMajorGroupinTax = 0;
+        size_t numMajorGroupinTax = 0;
         for (auto &p : freq) {
             numMajorGroupinTax = max(numMajorGroupinTax, p.second);
         }
         numMajorGroup += numMajorGroupinTax;
         numTaxGroups += groupIds.size();
     }
-    count.recall = (numTaxGroups == 0.0f) ? 0.0f : numMajorGroup / numTaxGroups;
+    count.recall = (numTaxGroups == 0.0) ? 0.0 : numMajorGroup / numTaxGroups;
 }

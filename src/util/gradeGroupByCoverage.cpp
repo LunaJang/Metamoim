@@ -45,7 +45,7 @@ static void computeGroupPurityRecallByCov(
     const unordered_map<TaxID, vector<int>> &tax2groups,
     CovGroupCount &count)
 {
-    float numMajor = 0.0f, totalGrouped = 0.0f;
+    double numMajor = 0.0, totalGrouped = 0.0;
     for (const auto &kv : group2taxs) {
         unordered_map<TaxID, int> freq;
         for (TaxID t : kv.second) freq[t]++;
@@ -56,7 +56,7 @@ static void computeGroupPurityRecallByCov(
     }
     count.purity = (totalGrouped > 0.0f) ? numMajor / totalGrouped : 0.0f;
 
-    float numMajorGroup = 0.0f, totalTaxReads = 0.0f;
+    double numMajorGroup = 0.0, totalTaxReads = 0.0;
     for (const auto &kv : tax2groups) {
         unordered_map<int, int> freq;
         for (int g : kv.second) freq[g]++;
