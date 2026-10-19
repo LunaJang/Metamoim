@@ -17,11 +17,13 @@
 using namespace std;
 
 struct CovGroupCount {
-    float purity = 0.0f, recall = 0.0f, f1 = 0.0f;
+    // double for the same reason as gradeGroup's CountAtRank: these are sums over a
+    // coverage band's reads, which on the larger bands is tens of millions.
+    double purity = 0.0, recall = 0.0, f1 = 0.0;
     void calculate() {
-        f1 = (purity + recall > 0.0f)
-             ? 2.0f * purity * recall / (purity + recall)
-             : 0.0f;
+        f1 = (purity + recall > 0.0)
+             ? 2.0 * purity * recall / (purity + recall)
+             : 0.0;
     }
 };
 
@@ -47,25 +49,25 @@ static void computeGroupPurityRecallByCov(
 {
     double numMajor = 0.0, totalGrouped = 0.0;
     for (const auto &kv : group2taxs) {
-        unordered_map<TaxID, int> freq;
+        unordered_map<TaxID, size_t> freq;
         for (TaxID t : kv.second) freq[t]++;
-        int mx = 0;
-        for (auto &p : freq) mx = max(mx, p.second);
-        numMajor     += (float)mx;
-        totalGrouped += (float)kv.second.size();
+        size_t mx = 0;
+        for (auto &p : freq) mx = max(mx, (size_t) p.second);
+        numMajor     += (double) mx;
+        totalGrouped += (double) kv.second.size();
     }
-    count.purity = (totalGrouped > 0.0f) ? numMajor / totalGrouped : 0.0f;
+    count.purity = (totalGrouped > 0.0) ? numMajor / totalGrouped : 0.0;
 
     double numMajorGroup = 0.0, totalTaxReads = 0.0;
     for (const auto &kv : tax2groups) {
-        unordered_map<int, int> freq;
+        unordered_map<int, size_t> freq;
         for (int g : kv.second) freq[g]++;
-        int mx = 0;
-        for (auto &p : freq) mx = max(mx, p.second);
-        numMajorGroup += (float)mx;
-        totalTaxReads += (float)kv.second.size();
+        size_t mx = 0;
+        for (auto &p : freq) mx = max(mx, (size_t) p.second);
+        numMajorGroup += (double) mx;
+        totalTaxReads += (double) kv.second.size();
     }
-    count.recall = (totalTaxReads > 0.0f) ? numMajorGroup / totalTaxReads : 0.0f;
+    count.recall = (totalTaxReads > 0.0) ? numMajorGroup / totalTaxReads : 0.0;
 }
 
 void setGradeGroupByCoverageDefault(LocalParameters &par) {
