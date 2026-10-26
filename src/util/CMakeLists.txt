@@ -1,4 +1,5 @@
 set(util_source_files
+        util/grade.cpp
         util/gradeGroup.cpp
         util/gradeGroupByCoverage.cpp
         util/gradeStrain.cpp

@@ -382,6 +382,39 @@ LocalParameters::LocalParameters() :
                         typeid(std::string),
                         (void *) &groupStats,
                         "^.*$"),
+        SCORE_HIST(SCORE_HIST_ID,
+                        "--score-hist",
+                        "grade: write the TP/FP score histogram to this file",
+                        "Writes rank, verdict and a 1000-bin histogram of the per-read score,\n"
+                        "              so a classification threshold can be read off the two\n"
+                        "              distributions. The per-read scores themselves are hundreds\n"
+                        "              of millions of lines and are never written. Empty, the\n"
+                        "              default, writes nothing. Needs --hist-score-col, or\n"
+                        "              --kraken2 to compute the confidence from the LCA mapping.",
+                        typeid(std::string),
+                        (void *) &scoreHist,
+                        "^.*$"),
+        HIST_SCORE_COL(HIST_SCORE_COL_ID,
+                        "--hist-score-col",
+                        "grade: score column for --score-hist. ZERO-based, as grade's other column flags are.",
+                        "Score column for --score-hist. ZERO-based, matching --readid-col and\n"
+                        "              --taxid-col in this command -- deliberately not --score-col,\n"
+                        "              which apply-group reads ONE-based. Ignored under --kraken2.",
+                        typeid(int),
+                        (void *) &histScoreCol,
+                        "^[0-9]+$"),
+        HIST_DENOM_COL(HIST_DENOM_COL_ID,
+                        "--hist-denom-col",
+                        "grade: divide the --score-hist score by this column. ZERO-based; -1 does not divide.",
+                        "Divides the score by another column so an unbounded score becomes a\n"
+                        "              rate on [0, 1]. Centrifuger writes a hit score whose scale is\n"
+                        "              the square of the hit length, so its comparable quantity is\n"
+                        "              hit length over query length: --hist-score-col 5\n"
+                        "              --hist-denom-col 6. ZERO-based. -1, the default, divides by\n"
+                        "              nothing, which is right for a score already on [0, 1].",
+                        typeid(int),
+                        (void *) &histDenomCol,
+                        "^-?[0-9]+$"),
         COMMON_KMER_SPAN(COMMON_KMER_SPAN_ID,
                     "--common-kmer-span",
                     "K-mers discarded either side of a common-k-mer hit (0=the hit alone)",
@@ -998,6 +1031,10 @@ LocalParameters::LocalParameters() :
     // grade
     grade.push_back(&TEST_RANK);
     grade.push_back(&GROUP_STATS);
+    grade.push_back(&SCORE_HIST);
+    grade.push_back(&HIST_SCORE_COL);
+    grade.push_back(&HIST_DENOM_COL);
+    grade.push_back(&KRAKEN2_FORMAT);
     grade.push_back(&TEST_TYPE);
     grade.push_back(&PARAM_THREADS);
     grade.push_back(&READID_COL);

@@ -179,6 +179,12 @@ public:
     // benchmark set
     PARAMETER(RANDOM_SEED)
     PARAMETER(ASSACC2TAXID)
+    // Appended, not inserted. PARAMETER() takes its id from __COUNTER__, so a new
+    // declaration placed mid-list renumbers every parameter after it -- which it did,
+    // and gradeGroup then scored every rank zero on the test fixture.
+    PARAMETER(SCORE_HIST)
+    PARAMETER(HIST_SCORE_COL)
+    PARAMETER(HIST_DENOM_COL)
 
     // Superkingdom taxonomy id
     int virusTaxId;
@@ -237,6 +243,9 @@ public:
     int partitions;           // intermediate partitions; 0 = follow --threads (reproduction only)
     int maxBufferedPairs;     // emit-stage flush trigger; 0 = derive it from --max-ram
     std::string groupStats;   // gradeGroup: where to write one row per group
+    std::string scoreHist;    // grade: where to write the TP/FP score histogram
+    int histScoreCol;         // grade: score column for that histogram, ZERO-based
+    int histDenomCol;         // grade: divide the score by this column; -1 = do not
     int edgeMode;             // 0 = clique C(m,2), 1 = center-star. Set by the command, not a flag
     int maxKmerReads;         // explicit reads-per-k-mer cap; 0 defers to maxKmerQuantile
     float maxKmerQuantile;    // share of k-mers (m >= 2) the cap keeps; picks maxKmerReads
