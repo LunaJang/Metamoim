@@ -185,6 +185,7 @@ public:
     PARAMETER(SCORE_HIST)
     PARAMETER(HIST_SCORE_COL)
     PARAMETER(HIST_DENOM_COL)
+    PARAMETER(HIST_SCORE_MAX)
 
     // Superkingdom taxonomy id
     int virusTaxId;
@@ -246,6 +247,7 @@ public:
     std::string scoreHist;    // grade: where to write the TP/FP score histogram
     int histScoreCol;         // grade: score column for that histogram, ZERO-based
     int histDenomCol;         // grade: divide the score by this column; -1 = do not
+    float histScoreMax;       // grade: top of the histogram's range; scores above it clamp
     int edgeMode;             // 0 = clique C(m,2), 1 = center-star. Set by the command, not a flag
     int maxKmerReads;         // explicit reads-per-k-mer cap; 0 defers to maxKmerQuantile
     float maxKmerQuantile;    // share of k-mers (m >= 2) the cap keeps; picks maxKmerReads

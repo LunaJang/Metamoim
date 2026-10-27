@@ -415,6 +415,17 @@ LocalParameters::LocalParameters() :
                         typeid(int),
                         (void *) &histDenomCol,
                         "^-?[0-9]+$"),
+        HIST_SCORE_MAX(HIST_SCORE_MAX_ID,
+                        "--hist-score-max",
+                        "grade: top of the --score-hist range. 1.0 for a rate; raise it for a raw score.",
+                        "The histogram spans [0, this] in a thousand bins, and anything above\n"
+                        "              lands in the last one. 1.0, the default, is right for a score\n"
+                        "              that is already a rate. Centrifuger's raw hit score is on the\n"
+                        "              scale of the square of the hit length and needs a real bound,\n"
+                        "              or every read piles into the top bin and the table says nothing.",
+                        typeid(float),
+                        (void *) &histScoreMax,
+                        "^[0-9]*\\.?[0-9]+$"),
         COMMON_KMER_SPAN(COMMON_KMER_SPAN_ID,
                     "--common-kmer-span",
                     "K-mers discarded either side of a common-k-mer hit (0=the hit alone)",
@@ -1034,6 +1045,7 @@ LocalParameters::LocalParameters() :
     grade.push_back(&SCORE_HIST);
     grade.push_back(&HIST_SCORE_COL);
     grade.push_back(&HIST_DENOM_COL);
+    grade.push_back(&HIST_SCORE_MAX);
     grade.push_back(&KRAKEN2_FORMAT);
     grade.push_back(&TEST_TYPE);
     grade.push_back(&PARAM_THREADS);

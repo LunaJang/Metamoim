@@ -118,6 +118,7 @@ void setGradeDefault(LocalParameters & par){
     par.scoreCol = 0;
     par.histScoreCol = 0;
     par.histDenomCol = -1;
+    par.histScoreMax = 1.0f;
     par.scoreHist = "";
     par.kraken2Format = false;
     par.testRank = "";
@@ -477,7 +478,9 @@ par, cout, printColumnsIdx, cerr, names, nodes, merged)
                         else if (p == 'X') v = 1;
                         else if (p == 'N') v = 2;
                         if (v >= 0) {
-                            int b = (int)(scoreList[j] * SCORE_BINS);
+                            const float span = (par.histScoreMax > 0.0f)
+                                               ? par.histScoreMax : 1.0f;
+                            int b = (int)(scoreList[j] / span * SCORE_BINS);
                             if (b < 0) b = 0;
                             if (b >= SCORE_BINS) b = SCORE_BINS - 1;
                             scoreHistLocal[rank][v][b]++;
@@ -584,9 +587,11 @@ par, cout, printColumnsIdx, cerr, names, nodes, merged)
                         // Empty bins are dropped. A 1000-bin table is mostly zeros on a score
                         // that piles up at one end, and the reader has the bin bounds.
                         if (bins[b] == 0) { continue; }
+                        const double span = (par.histScoreMax > 0.0f)
+                                            ? par.histScoreMax : 1.0;
                         hist << result.path << "\t" << rank << "\t" << vname[v] << "\t"
-                             << (double) b / SCORE_BINS << "\t"
-                             << (double) (b + 1) / SCORE_BINS << "\t" << bins[b] << "\n";
+                             << span * b / SCORE_BINS << "\t"
+                             << span * (b + 1) / SCORE_BINS << "\t" << bins[b] << "\n";
                     }
                 }
             }
