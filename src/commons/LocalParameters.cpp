@@ -464,11 +464,18 @@ LocalParameters::LocalParameters() :
                         "^[0-9]+$"),
         MIN_VOTE_SCORE(MIN_VOTE_SCORE_ID,
                     "--min-vote-score",
-                    "Min. classification score to vote.",
-                    "Min. classification score to vote.",
+                    "Min. classification score to vote. On the scale of --score-col, which is not always [0, 1].",
+                    "A member scoring below this is excluded from its group's vote and is\n"
+                    "              overwritten by the result. The scale is whatever --score-col\n"
+                    "              names: a rate for Metabuli and for Kraken2 under --kraken2, but\n"
+                    "              Centrifuger's raw hit score is on the scale of the square of the\n"
+                    "              hit length and a useful bound there is in the hundreds.\n"
+                    "              The pattern was ^0(\\.[0-9]+)?|1(\\.0+)?$, which assumed a rate\n"
+                    "              and silently rejected every larger value -- and, with the\n"
+                    "              alternation left ungrouped, was not the bound it looked like.",
                     typeid(float),
                     (void *) &minVoteScr,
-                    "^0(\\.[0-9]+)?|1(\\.0+)?$"),
+                    "^[0-9]+(\\.[0-9]+)?$"),
         KRAKEN2_FORMAT(KRAKEN2_FORMAT_ID,
                   "--kraken2",
                   "Read --score-col as Kraken2's LCA mapping and score it.",
