@@ -33,6 +33,23 @@ int create_common_kmer_list(int argc, const char **argv, const Command &command)
     LocalParameters &par = LocalParameters::getLocalInstance();
     setDefaults(par);
     par.parseParameters(argc, argv, command, true, Parameters::PARSE_ALLOW_EMPTY, 0);
+
+    // grouping derives the k-mer format from --syncmer and ignores whatever --kmer-format said
+    // (groupGeneration.cpp, right after its own parseParameters). This command used to take
+    // --kmer-format at face value, so `create-common-kmer-list --syncmer 1` built a format-3
+    // list that grouping -- asking for format 5 -- could not use. Before the kmer_params check
+    // existed that mismatch was silent: the run finished, reported success, and removed no
+    // k-mer at all. Derive it the same way here so the two commands cannot disagree.
+    {
+        const int derived = (par.syncmer == 0) ? 3 : 5;
+        if (par.kmerFormat != derived) {
+            cout << "Note: --kmer-format " << par.kmerFormat << " does not match --syncmer "
+                 << par.syncmer << "; using format " << derived << ", which is what grouping"
+                 << " will ask for." << endl;
+        }
+        par.kmerFormat = derived;
+    }
+
     const string & dbDir = par.filenames[0];
     const string taxonomyDir = par.filenames[3];
 
