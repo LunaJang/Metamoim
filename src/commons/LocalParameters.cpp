@@ -499,6 +499,17 @@ LocalParameters::LocalParameters() :
                   typeid(int),
                   (void *) &scoreCol,
                   "^[0-9]+$"),
+        DENOM_COL(DENOM_COL_ID,
+                  "--denom-col",
+                  "Column the score is divided by (ONE-based; 0 leaves it raw).",
+                  "Column the score is divided by before it is compared with --min-vote-score.\n"
+                  "              ONE-based. 0, the default, leaves the score as written. Centrifuger\n"
+                  "              reports a raw hit score whose scale is the square of the hit length,\n"
+                  "              so dividing by the query length puts its vote on the same [0, 1]\n"
+                  "              scale the other classifiers already use.",
+                  typeid(int),
+                  (void *) &denomCol,
+                  "^[0-9]+$"),
         WEIGHT_MODE(WEIGHT_MODE_ID,
                     "--weight-mode",
                     "Majority LCA weight mode.",
@@ -825,6 +836,7 @@ LocalParameters::LocalParameters() :
     readIdCol = 0;
     taxidCol = 0;
     scoreCol = 0;
+    denomCol = 0;
     kraken2Format = false;
     cladeRank = "";
     skipSecondary = 0;
@@ -1006,6 +1018,7 @@ LocalParameters::LocalParameters() :
     groupApplication.push_back(&PARAM_THREADS);
     groupApplication.push_back(&MIN_VOTE_SCORE);
     groupApplication.push_back(&SCORE_COL);
+    groupApplication.push_back(&DENOM_COL);
     groupApplication.push_back(&READID_COL);
     groupApplication.push_back(&TAXID_COL);
     groupApplication.push_back(&WEIGHT_MODE);

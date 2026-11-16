@@ -117,6 +117,7 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
     int classificationCol = par.taxidCol - 1; 
     int scoreCol = par.scoreCol - 1; 
     int readNameCol = par.readIdCol - 1; 
+    const int denomCol = par.denomCol - 1;
     if (par.weightMode == 0 || scoreCol < 0) {
         string line;
         while (getline(inFile, line)) {
@@ -166,6 +167,17 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
             if (scoreEnd == scoreStr) {
                 score = 0.0f;
                 unreadableScores++;
+            } else if (denomCol >= 0) {
+                // Centrifuger's score is the square of the hit length, so it votes on a scale
+                // the other classifiers never reach. Dividing by the query length puts every
+                // classifier's vote on [0, 1], which is what the threshold search bins over.
+                if (static_cast<size_t>(denomCol) >= columns.size()) {
+                    cerr << "Error: --denom-col " << (denomCol + 1) << " but the line has "
+                         << columns.size() << " columns." << endl;
+                    EXIT(EXIT_FAILURE);
+                }
+                const float den = strtof(columns[denomCol].c_str(), nullptr);
+                score = (den > 0.0f) ? score / den : 0.0f;
             }
             orgResults.push_back({taxId, score, columns[readNameCol]});
             processedReadCnt++;

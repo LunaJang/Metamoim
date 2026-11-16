@@ -186,6 +186,7 @@ public:
     PARAMETER(HIST_SCORE_COL)
     PARAMETER(HIST_DENOM_COL)
     PARAMETER(HIST_SCORE_MAX)
+    PARAMETER(DENOM_COL)
 
     // Superkingdom taxonomy id
     int virusTaxId;
@@ -257,6 +258,7 @@ public:
 
     // Group application
     int scoreCol;
+    int denomCol;
     int readIdCol;
     int taxidCol;   
 
