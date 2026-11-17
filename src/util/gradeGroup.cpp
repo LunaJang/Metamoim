@@ -1,6 +1,7 @@
 #include "NcbiTaxonomy.h"
 #include "Parameters.h"
 #include "LocalParameters.h"
+#include "LocalUtil.h"
 #include "IndexCreator.h"
 
 #include <string>
@@ -207,22 +208,8 @@ int gradeGroup(int argc, const char **argv, const Command &command) {
             readGroupFileName = readGroupFileNames[i];
             queryNameFileName = queryNameFileNames[i];
 
-            {
-                string key, value;
-                ifstream map(mappingFile);
-                if (map.is_open()) {
-                    while (getline(map, key, '\t')) {
-                        if (!getline(map, value, '\n')) break;
-                        // remove version number
-                        size_t pos = key.find('.');
-                        if (pos != string::npos) {
-                            key = key.substr(0, pos);
-                        }
-                        assacc2taxid[key] = stoi(value);
-                    }
-                } else {
-                    cerr << "Cannot open file for answer: " << mappingFile << endl;
-                }
+            if (!LocalUtil::loadAnswerMapping(mappingFile, par.testType, assacc2taxid)) {
+                cerr << "Cannot open file for answer: " << mappingFile << endl;
             }
             cout << "Mapping loaded: " << mappingFile << endl;
 

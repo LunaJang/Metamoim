@@ -6,6 +6,7 @@
 #include "common.h"
 #include "KSeqWrapper.h"
 #include <cstdint>
+#include <unordered_map>
 
 class LocalUtil : public Util {
 public:
@@ -39,6 +40,10 @@ public:
     static int getFirstWhiteSpacePos(const std::string & str);
 
     // static std::string getAccessionFromHeader(const std::string & header);
+
+    static bool loadAnswerMapping(const std::string & mappingFile,
+                                  const std::string & testType,
+                                  std::unordered_map<std::string, int> & assacc2taxid);
 };
 
 

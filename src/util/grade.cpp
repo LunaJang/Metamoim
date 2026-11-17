@@ -1,6 +1,7 @@
 #include "NcbiTaxonomy.h"
 #include "Parameters.h"
 #include "LocalParameters.h"
+#include "LocalUtil.h"
 #include "IndexCreator.h"
 
 #include <string>
@@ -261,24 +262,11 @@ par, cout, printColumnsIdx, cerr, names, nodes, merged)
             readClassificationFileName = readClassificationFileNames[i];
 
             // Load the mapping file (answer sheet) (accession to taxID)
-            string key, value;
-            ifstream map;
-            map.open(mappingFile);
-            if (map.is_open()) {
-                while (getline(map, key, '\t')) {
-                    getline(map, value, '\n');
-                    // remove version number
-                    size_t pos = key.find('.');
-                    if (pos != string::npos) {
-                        key = key.substr(0, pos);
-                    }
-                    assacc2taxid[key] = stoi(value);
-                }
+            if (LocalUtil::loadAnswerMapping(mappingFile, par.testType, assacc2taxid)) {
                 cout << "Answer file loaded" << endl;
             } else {
                 cout << "Cannot open file for answer" << endl;
             }
-            map.close();
 
             // Load classification results
             string resultLine;

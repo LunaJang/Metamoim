@@ -1,6 +1,7 @@
 #include "NcbiTaxonomy.h"
 #include "Parameters.h"
 #include "LocalParameters.h"
+#include "LocalUtil.h"
 #include "IndexCreator.h"
 
 #include <string>
@@ -144,22 +145,9 @@ int gradeGroupByCoverage(int argc, const char **argv, const Command &command) {
         for (size_t i = 0; i < N; ++i) {
             assacc2taxid.clear();
 
-            {
-                string k, v;
-                ifstream mf(mappingFiles[i]);
-                if (!mf.is_open()) { cerr << "Cannot open: " << mappingFiles[i] << endl; continue; }
-                while (getline(mf, k, '\t') && getline(mf, v, '\n')) {
-                    if (!v.empty() && v.back() == '\r') v.pop_back();
-                    if (v.empty() || !isdigit((unsigned char)v[0])) continue;
-                    if (par.testType == "cami") {
-                        size_t slash = k.rfind('/');
-                        if (slash != string::npos) k = k.substr(0, slash);
-                    } else {
-                        size_t d = k.find('.');
-                        if (d != string::npos) k = k.substr(0, d);
-                    }
-                    assacc2taxid[k] = stoi(v);
-                }
+            if (!LocalUtil::loadAnswerMapping(mappingFiles[i], par.testType, assacc2taxid)) {
+                cerr << "Cannot open: " << mappingFiles[i] << endl;
+                continue;
             }
 
             // Build queryTaxid and queryCov indexed by 0-based query position
