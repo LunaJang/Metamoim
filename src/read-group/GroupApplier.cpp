@@ -107,7 +107,19 @@ static float kraken2Confidence(const std::string & mapping,
     return static_cast<float>(inClade) / static_cast<float>(queried);
 }
 
+static bool parseTaxId(const std::string & field, TaxID & taxId) {
+    const char * begin = field.c_str();
+    char * end = nullptr;
+    const long value = strtol(begin, &end, 10);
+    if (end == begin || *end != '\0') {
+        return false;
+    }
+    taxId = static_cast<TaxID>(value);
+    return true;
+}
+
 void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processedReadCnt) {
+    size_t skippedLines = 0;
     ifstream inFile(orgRes);
     if (!inFile.is_open()) {
         cerr << "Error opening file: " << orgRes << endl;
@@ -124,7 +136,8 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
             if (line.empty()) continue;
             if (line.front() == '#') continue;
             std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
-            TaxID taxId = stoi(columns[classificationCol]);
+            TaxID taxId = 0;
+            if (!parseTaxId(columns[classificationCol], taxId)) { skippedLines++; continue; }
             orgResults.push_back({taxId, 1.0, columns[readNameCol]});
             processedReadCnt++;
         }
@@ -135,7 +148,8 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
             if (line.empty()) continue;
             if (line.front() == '#') continue;
             std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
-            TaxID taxId = stoi(columns[classificationCol]);
+            TaxID taxId = 0;
+            if (!parseTaxId(columns[classificationCol], taxId)) { skippedLines++; continue; }
             const float score = kraken2Confidence(columns[scoreCol], taxId, taxonomy);
             if (score == 0.0f) { emptyMappings++; }
             orgResults.push_back({taxId, score, columns[readNameCol]});
@@ -153,7 +167,8 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
             if (line.empty()) continue;
             if (line.front() == '#') continue;
             std::vector<std::string> columns = TaxonomyWrapper::splitByDelimiter(line, "\t", 20);
-            TaxID taxId = stoi(columns[classificationCol]);
+            TaxID taxId = 0;
+            if (!parseTaxId(columns[classificationCol], taxId)) { skippedLines++; continue; }
 
             // Not every classifier writes a score. Kraken2's fifth column is its LCA mapping,
             // which begins with a taxon id often enough to parse and with an 'A' -- its marker for
@@ -188,6 +203,11 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
         }
     }
     inFile.close();
+    if (skippedLines > 0) {
+        cout << "Note: " << skippedLines << " lines held no taxon id in column "
+             << (classificationCol + 1) << " and were skipped, which is what a header line is."
+             << endl;
+    }
     cout << "Original classification result loaded from " << orgRes << " successfully." << endl;
     cout << "Number of query result: " << orgResults.size() << endl;
 }
