@@ -130,7 +130,7 @@ void GroupApplier::loadOrgResult(vector<OrgResult>& orgResults, size_t& processe
     int scoreCol = par.scoreCol - 1; 
     int readNameCol = par.readIdCol - 1; 
     const int denomCol = par.denomCol - 1;
-    if (par.weightMode == 0 || scoreCol < 0) {
+    if (scoreCol < 0) {
         string line;
         while (getline(inFile, line)) {
             if (line.empty()) continue;
@@ -349,9 +349,11 @@ void GroupApplier::applyRepLabel(const vector<OrgResult>& orgResults,
             // available to it, and propagation cost it species F1 0.8262 -> 0.5705 on
             // species-inclusion while gaining 0.4417 -> 0.5778 on species-exclusion.
             //
-            // The rule is now the same in every mode: a member keeps its own label unless it
-            // has none or scores below the vote threshold. Under mode 0 every score is 1, so
-            // it reduces to overwriting the unlabelled, which is what propagation is for.
+            // The rule is the same in every mode: a member keeps its own label unless it has
+            // none or scores below the vote threshold. Mode 0 says the vote is unweighted, not
+            // that the score is unread -- it is read and gated on here, so --weight-mode 0 at a
+            // threshold means "every member votes equally, and a member below the threshold is
+            // relabelled". Only a classifier with no score column at all lands outside this.
             bool applyRep = (orgResults[queryIdx].label == 0
                              || orgResults[queryIdx].score < par.minVoteScr);
             if (applyRep) {
