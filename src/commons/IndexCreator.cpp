@@ -776,6 +776,12 @@ void IndexCreator::getTaxonomyOfAccessions(vector<Accession> & observedAccession
             if (it == external2internalTaxID.end() || observedAccessionsVec[i].taxID == 0) {
                 cout << "TaxID is not found for accession " << observedAccessionsVec[i].accession << " " << observedAccessionsVec[i].taxID << endl;
                 unmappedAccessions.push_back(observedAccessionsVec[i].accession);
+                // Zero it. Every later reader tells an unmapped accession apart by taxID == 0 --
+                // the acc2taxid.map writer below and getAccessionBatches both -- but leaving the
+                // external taxid in place let the writer hand it to getOriginalTaxID, which exits
+                // the whole run once it is larger than maxTaxID. A CAMI3 reference whose
+                // accession2taxid is newer than the taxonomy dump killed the list that way.
+                observedAccessionsVec[i].taxID = 0;
                 continue;
             }
             curId = it->second;
